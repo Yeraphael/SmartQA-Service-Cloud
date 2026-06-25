@@ -1,0 +1,7 @@
+name = "smartqa"
+title = "SmartQA 客服质检"
+version = "0.1.0"
+description = "千牛聊天记录 AI 客服质检系统，包含数据同步、会话标准化、AI 质检与老板/客服端统计。"
+optional = false
+tags = ["smartqa", "qianniu", "qc"]
+
