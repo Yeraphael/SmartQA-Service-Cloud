@@ -25,6 +25,8 @@ async def get_smartqa_health_controller() -> JSONResponse:
         target_db_name=settings.SMARTQA_TARGET_DB_NAME,
         boss_username=settings.SMARTQA_BOSS_USERNAME,
         ali_model_name=settings.SMARTQA_ALI_MODEL_NAME,
+        qc_task_concurrency=settings.SMARTQA_QC_TASK_CONCURRENCY,
+        sync_overlap_minutes=settings.SMARTQA_SYNC_OVERLAP_MINUTES,
+        shop_record_rolling_days=settings.SMARTQA_SHOP_RECORD_ROLLING_DAYS,
     )
     return SuccessResponse(data=data, msg="SmartQA 服务正常")
-

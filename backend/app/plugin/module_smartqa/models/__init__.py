@@ -1,0 +1,2 @@
+"""SmartQA ORM models."""
+

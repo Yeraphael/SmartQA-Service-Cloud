@@ -34,6 +34,10 @@ from app.config.path_conf import SCRIPT_DIR
 from app.core.database import async_db_session, create_tables
 from app.core.logger import logger
 from app.plugin.module_example.demo.model import DemoModel
+from app.plugin.module_smartqa.models.conversation import DwdCustomerStaffRelationModel, DwdQnConversationModel, DwdQnMessageModel
+from app.plugin.module_smartqa.models.dimension import DimCustomerIdentityModel, DimCustomerModel, DimProductModel, DimShopModel, DimStaffAccountModel, DimStaffModel
+from app.plugin.module_smartqa.models.ods import OdsImportBatchModel, OdsQnChatRecordModel, OdsQnShopRecordModel
+from app.plugin.module_smartqa.models.qc import ModelCallLogModel, QcIssueEvidenceModel, QcIssueModel, QcPromptTemplateModel, QcResultModel, QcRuleModel, QcRuleVersionModel, QcTaskModel
 from app.plugin.module_task.cronjob.node.model import NodeModel
 from app.plugin.module_task.workflow.nodes.model import WorkflowNodeTypeModel
 
@@ -83,6 +87,27 @@ class InitializeData:
         NodeModel,
         WorkflowNodeTypeModel,
         DemoModel,
+        # ── SmartQA 业务表 ──
+        OdsImportBatchModel,
+        OdsQnChatRecordModel,
+        OdsQnShopRecordModel,
+        DimShopModel,
+        DimProductModel,
+        DimStaffModel,
+        DimStaffAccountModel,
+        DimCustomerModel,
+        DimCustomerIdentityModel,
+        DwdQnConversationModel,
+        DwdQnMessageModel,
+        DwdCustomerStaffRelationModel,
+        QcRuleModel,
+        QcPromptTemplateModel,
+        QcRuleVersionModel,
+        QcTaskModel,
+        QcResultModel,
+        QcIssueModel,
+        QcIssueEvidenceModel,
+        ModelCallLogModel,
     ]
 
     # 树形模型：JSON 含嵌套 children，需递归创建对象
