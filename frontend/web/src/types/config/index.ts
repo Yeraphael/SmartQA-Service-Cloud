@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 配置类型定义模块
  *
  * 提供系统配置相关的类型定义
@@ -21,7 +21,7 @@
  * - 配置数据验证
  *
  * @module types/config/index
- * @author FastapiAdmin Team
+ * @author SmartQA
  */
 
 import { MenuTypeEnum, SystemThemeEnum } from "@/enums/appEnum";
@@ -215,10 +215,6 @@ export interface HeaderBarFeatureConfig {
   globalSearch: FeatureConfigItem;
   /** 全屏功能 */
   fullscreen: FeatureConfigItem;
-  /** 通知功能 */
-  notification: FeatureConfigItem;
-  /** 聊天功能 */
-  chat: FeatureConfigItem;
   /** 多语言切换 */
   language: FeatureConfigItem;
   /** 设置面板 */

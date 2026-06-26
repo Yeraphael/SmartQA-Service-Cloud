@@ -108,7 +108,7 @@ withDefaults(defineProps<Props>(), {
 
 const configStore = useConfigStore();
 
-/** 接口 tenant_logo，空则 FaLogo 内置默认图 */
+/** 公司 Logo 配置，空则 FaLogo 内置默认图 */
 const webLogoSrc = computed(
   () => configStore.configData.tenant_logo?.config_value?.trim() || undefined
 );

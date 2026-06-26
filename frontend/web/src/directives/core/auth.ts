@@ -8,9 +8,8 @@
  * ## 使用示例
  *
  * ```vue
- * <el-button v-auth="'module_system:user:create'">新增</el-button>
- * <el-button v-auth="'module_system:user:update'">编辑</el-button>
- * <el-button v-auth="'module_platform:order:create'">创建订单</el-button>
+ * <el-button v-auth="'smartqa:qc-task:run'">执行质检</el-button>
+ * <el-button v-auth="'smartqa:staff-user:reset-password'">重置密码</el-button>
  * ```
  *
  * @module directives/auth

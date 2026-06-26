@@ -1,4 +1,4 @@
-/**
+﻿/**
  * v-ripple 水波纹效果指令
  *
  * 为元素添加 Material Design 风格的水波纹点击效果。
@@ -34,7 +34,7 @@
  * - 自定义：通过 color 参数指定任意颜色
  *
  * @module directives/ripple
- * @author FastapiAdmin Team
+ * @author SmartQA
  */
 
 import type { App, Directive, DirectiveBinding } from "vue";

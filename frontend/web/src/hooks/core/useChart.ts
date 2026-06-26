@@ -1,4 +1,4 @@
-/**
+﻿/**
  * useChart - ECharts 图表管理
  *
  * 提供完整的 ECharts 图表生命周期管理和配置能力，简化图表开发流程。
@@ -46,7 +46,7 @@
  * ```
  *
  * @module useChart
- * @author FastapiAdmin Team
+ * @author SmartQA
  */
 
 import { echarts, type EChartsOption } from "@/plugins/echarts";

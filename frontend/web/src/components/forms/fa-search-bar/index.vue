@@ -27,29 +27,7 @@
               <component v-if="typeof item.label !== 'string'" :is="item.label" />
               <span v-else>{{ item.label }}</span>
             </template>
-            <!-- 创建人插槽 -->
-            <template v-if="item.key === 'created_id' && !$slots.created_id">
-              <div class="w-full min-w-0">
-                <FaUserTableSelect
-                  :model-value="modelValue?.created_id == null ? undefined : modelValue.created_id"
-                  @update:model-value="(v: number | undefined) => patchAuditField('created_id', v)"
-                  @confirm-click="emitImmediateSearch"
-                  @clear-click="emitImmediateSearch"
-                />
-              </div>
-            </template>
-            <!-- 更新人插槽 -->
-            <template v-else-if="item.key === 'updated_id' && !$slots.updated_id">
-              <div class="w-full min-w-0">
-                <FaUserTableSelect
-                  :model-value="modelValue?.updated_id == null ? undefined : modelValue.updated_id"
-                  @update:model-value="(v: number | undefined) => patchAuditField('updated_id', v)"
-                  @confirm-click="emitImmediateSearch"
-                  @clear-click="emitImmediateSearch"
-                />
-              </div>
-            </template>
-            <template v-else>
+            <template>
               <slot :name="item.key" :item="item" :modelValue="modelValue">
                 <component
                   :is="getComponent(item)"
@@ -142,7 +120,6 @@ import { useWindowSize } from "@vueuse/core";
 import { useI18n } from "vue-i18n";
 import { toRaw, type Component } from "vue";
 import FaDatePicker from "@/components/forms/fa-search-bar/FaDatePicker.vue";
-import FaUserTableSelect from "./FaUserTableSelect.vue";
 import {
   getAuditSearchFormItems,
   type GetAuditSearchFormItemsOptions,
@@ -473,17 +450,6 @@ const getComponent = (item: SearchFormItem) => {
   // 使用 type 获取预定义组件
   const { type } = item;
   return componentMap[type as keyof typeof componentMap] || componentMap["input"];
-};
-
-/**
- * 更新审计字段并立即触发搜索
- */
-const patchAuditField = (key: "created_id" | "updated_id", val: number | undefined) => {
-  modelValue.value = { ...modelValue.value, [key]: val };
-};
-
-const emitImmediateSearch = () => {
-  emit("search", getSanitizedOutput());
 };
 
 /**

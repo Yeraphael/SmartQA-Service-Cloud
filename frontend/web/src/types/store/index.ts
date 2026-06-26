@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Store 状态类型定义模块
  *
  * 提供 Pinia Store 的状态类型定义
@@ -20,7 +20,7 @@
  * - 类型提示和自动补全
  *
  * @module types/store/index
- * @author FastapiAdmin Team
+ * @author SmartQA
  */
 
 import { MenuThemeEnum, SystemThemeEnum } from "@/enums/appEnum";

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 配置图片资源
  *
  * 统一管理设置中心使用的预览图片资源。
@@ -11,7 +11,7 @@
  * - menuStyles: 菜单风格预览图（设计/暗色/亮色）
  *
  * @module config/assets/images
- * @author FastapiAdmin Team
+ * @author SmartQA
  */
 
 import lightTheme from "@imgs/settings/theme_styles/light.png";

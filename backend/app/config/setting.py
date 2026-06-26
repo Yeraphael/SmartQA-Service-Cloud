@@ -1,4 +1,4 @@
-import os
+﻿import os
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Literal
@@ -35,9 +35,9 @@ class Settings(BaseSettings):
     # ******************* API文档配置 ****************** #
     # ================================================= #
     DEBUG: bool = True  # 调试模式
-    TITLE: str = "🎉 FastapiAdmin 🎉 "  # 文档标题
-    VERSION: str = "0.1.0"  # 版本号
-    DESCRIPTION: str = "后台接口文档"  # 文档描述
+    TITLE: str = "SmartQA Service Cloud"  # 文档标题
+    VERSION: str = "1.0.0"  # 版本号
+    DESCRIPTION: str = "SmartQA AI 客服质检系统接口文档"  # 文档描述
     SUMMARY: str = "接口汇总"  # 文档概述
     DOCS_URL: str = "/docs"  # Swagger UI路径
     REDOC_URL: str = "/redoc"  # ReDoc路径
@@ -76,17 +76,6 @@ class Settings(BaseSettings):
     ]
 
     # ================================================= #
-    # ******************* 支付配置 ******************* #
-    # ================================================= #
-    # 支付宝
-    PAYMENT_ALIPAY_APP_ID: str = ""
-    PAYMENT_ALIPAY_PRIVATE_KEY: str = ""
-    PAYMENT_ALIPAY_PUBLIC_KEY: str = ""
-    PAYMENT_ALIPAY_SANDBOX: bool = True
-    # 站点 URL（用于生成支付通知 URL）
-    SITE_URL: str = "http://localhost:8001"
-
-    # ================================================= #
     # ******************** 数据库配置 ******************* #
     # ================================================= #
     SQL_DB_ENABLE: bool = True  # 是否启用数据库
@@ -110,7 +99,7 @@ class Settings(BaseSettings):
     DATABASE_PORT: int = 3306
     DATABASE_USER: str = "root"
     DATABASE_PASSWORD: str = ""
-    DATABASE_NAME: str = "fastapiadmin"
+    DATABASE_NAME: str = "smartqa"
 
     # ================================================= #
     # ******************** Redis配置 ******************* #
@@ -131,20 +120,9 @@ class Settings(BaseSettings):
     CAPTCHA_FONT_PATH: str = "static/assets/font/Arial.ttf"  # 字体路径
 
     # ================================================= #
-    # ***************** 第三方 OAuth 登录（可选）********* #
     # ================================================= #
     # 自动注册用户的默认角色 ID 列表（须与库中角色主键一致）
-    OAUTH_DEFAULT_ROLE_IDS: list[int] = [2]
     # 回调异常时回跳的前端地址（与前端实际 /login 一致，含协议与端口）
-    OAUTH_FRONTEND_FALLBACK: str = "http://127.0.0.1:5173/login"
-    OAUTH_GITHUB_CLIENT_ID: str = ""
-    OAUTH_GITHUB_CLIENT_SECRET: str = ""
-    OAUTH_GITEE_CLIENT_ID: str = ""
-    OAUTH_GITEE_CLIENT_SECRET: str = ""
-    OAUTH_WECHAT_OPEN_APP_ID: str = ""
-    OAUTH_WECHAT_OPEN_APP_SECRET: str = ""
-    OAUTH_QQ_APP_ID: str = ""
-    OAUTH_QQ_APP_SECRET: str = ""
 
     # ================================================= #
     # ******************* 外部 HTTP（httpx）******************* #
@@ -233,7 +211,7 @@ class Settings(BaseSettings):
     # ================================================= #
     # ******************* 请求限制配置 ****************** #
     # ================================================= #
-    REQUEST_LIMITER_REDIS_PREFIX: str = "fastapiadmin:request_limiter:"
+    REQUEST_LIMITER_REDIS_PREFIX: str = "smartqa:request_limiter:"
 
     # ================================================= #
     # ******************* 动态配置 ******************* #

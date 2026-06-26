@@ -1,4 +1,4 @@
-/**
+﻿/**
  * WebSocket 服务管理
  *
  * @description
@@ -7,7 +7,7 @@
  * - 在线用户计数 WebSocket
  * - 其他业务 WebSocket
  *
- * @author fastapiadmin
+ * @author SmartQA
  */
 
 import { Auth } from "@utils/auth";

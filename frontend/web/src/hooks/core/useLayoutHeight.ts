@@ -1,4 +1,4 @@
-/**
+﻿/**
  * useLayoutHeight - 页面布局高度管理
  *
  * 自动计算和管理页面内容区域的高度，确保内容区域能够正确填充剩余空间。
@@ -13,7 +13,7 @@
  * 5. 自动查找模式 - 提供通过 ID 自动查找元素的便捷方式
  *
  * @module useLayoutHeight
- * @author FastapiAdmin Team
+ * @author SmartQA
  */
 
 import { ref, computed, watch, onMounted } from "vue";

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 应用状态管理模块（兼容 web 项目）
  *
  * 提供应用相关的状态管理
@@ -21,7 +21,7 @@
  * - 新手引导展示
  *
  * @module store/modules/app.store
- * @author FastapiAdmin Team
+ * @author SmartQA
  */
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";

@@ -11,19 +11,18 @@ import type { AppRouteRecord, RouteMeta } from "@/types/router";
 import { defineComponent, h, onMounted, ref } from "vue";
 import type { RouteRecordRaw } from "vue-router";
 import { RouterView, useRoute } from "vue-router";
-import { t } from "@wangeditor-next/editor";
 
 /** 首页 / 仪表盘父级 meta（侧栏、静态子路由共用） */
 export const HOME_MENU_META: RouteMeta = {
-  title: "menus.home.title",
-  icon: "ri:home-smile-2-line",
+  title: "SmartQA",
+  icon: "ri:customer-service-2-line",
   keepAlive: true,
   fixedTab: true,
 };
 
 export const DASHBOARD_PARENT_META: RouteMeta = {
-  title: "menus.dashboard.title",
-  icon: "ri:pie-chart-line",
+  title: "SmartQA",
+  icon: "ri:customer-service-2-line",
   alwaysShow: true,
 };
 
@@ -140,43 +139,7 @@ const IframeView = defineComponent({
   },
 });
 
-/**
- * `/dashboard` 下静态子路由（唯一数据源）。
- * 下方壳层菜单合并函数由此剥离 `component` 生成侧栏补全菜单。
- */
-export const dashboardLayoutChildren: AppRouteRecordRaw[] = [
-  {
-    path: "workplace",
-    name: "DashboardWorkplace",
-    component: () => import("@views/dashboard/workplace/index.vue"),
-    meta: {
-      title: "menus.dashboard.workplace",
-      icon: "ri:bar-chart-box-line",
-      keepAlive: true,
-    },
-  },
-  {
-    path: "analysis",
-    name: "DashboardAnalysis",
-    component: () => import("@views/dashboard/analysis/index.vue"),
-    meta: {
-      title: "menus.dashboard.analysis",
-      icon: "ri:align-item-bottom-line",
-      keepAlive: false,
-    },
-  },
-  {
-    path: "screen",
-    name: "DashboardScreen",
-    component: () => import("@views/dashboard/screen/index.vue"),
-    meta: {
-      title: "数据大屏",
-      icon: "ri:tv-line",
-      keepAlive: false,
-      hidden: false,
-    },
-  },
-];
+export const dashboardLayoutChildren: AppRouteRecordRaw[] = [];
 
 // -----------------------------------------------------------------------------
 // 静态壳层菜单：后端未下发 /home、/dashboard 时补全侧栏；混合模式路由按 name 去重合并
@@ -275,33 +238,7 @@ function dashboardRoutesToShellMenu(route: AppRouteRecord, parentAbs = ""): AppR
 }
 
 export function mergeShellRoutesIntoMenu(menuList: AppRouteRecord[]): AppRouteRecord[] {
-  const paths = new Set<string>();
-  const names = new Set<string>();
-  collectPathsAndNames(menuList, paths, names);
-
-  const additions: AppRouteRecord[] = [];
-
-  const tryPush = (item: AppRouteRecord) => {
-    const p = normalizeMenuPath(item.path as string);
-    const n = item.name ? String(item.name) : "";
-    if (p && !paths.has(p) && (!n || !names.has(n))) {
-      additions.push(item);
-      if (p) paths.add(p);
-      if (n) names.add(n);
-      if (item.children?.length) {
-        collectPathsAndNames(item.children, paths, names);
-      }
-    }
-  };
-
-  tryPush(mergeShellHomeMenu);
-
-  if (!paths.has("/dashboard")) {
-    tryPush(dashboardRoutesToShellMenu(structuredClone(getDashboardMenuTreeForMerge())));
-  }
-
-  if (additions.length === 0) return menuList;
-  return [...additions, ...menuList];
+  return menuList;
 }
 
 /**
@@ -360,116 +297,28 @@ export const staticRoutes: AppRouteRecordRaw[] = [
   {
     path: "/",
     name: ROOT_LAYOUT_ROUTE_NAME,
-    redirect: "/home",
+    redirect: "/smartqa/dashboard",
     component: Layout,
     children: [
-      /** 首页（侧栏补入逻辑见同文件 `mergeShellRoutesIntoMenu`） */
       {
         path: "home",
         name: HOME_ROUTE_NAME,
-        component: () => import("@views/dashboard/home/index.vue"),
+        redirect: "/smartqa/dashboard",
         meta: HOME_MENU_META,
       },
-      /** 仪表盘子路由定义见同文件导出的 `dashboardLayoutChildren` */
       {
-        path: "dashboard",
-        name: "Dashboard",
-        redirect: "/dashboard/workplace",
-        component: NestedRouterParent,
-        meta: DASHBOARD_PARENT_META,
-        children: dashboardLayoutChildren,
-      },
-      /** 快速链接：统一父级，不在菜单中展示，通过 URL 或 fastEnter 直接访问 */
-      {
-        path: "fastlink",
-        name: "Fastlink",
+        path: "account",
+        name: "Account",
         component: NestedRouterParent,
         meta: { hidden: true },
         children: [
           {
             path: "profile",
-            name: "FastlinkProfile",
-            meta: { title: t("menus.system.userCenter"), icon: "ri:user-line", hidden: true },
-            component: () => import("@views/fastlink/current/profile.vue"),
-          },
-          {
-            path: "changelog",
-            name: "FastlinkChangeLog",
-            meta: {
-              title: t("menus.changelog.title"),
-              icon: "ri:draft-line",
-              hidden: true,
-              keepAlive: true,
-            },
-            component: () => import("@views/fastlink/changelog/index.vue"),
-          },
-          {
-            path: "pricing",
-            name: "FastlinkPricing",
-            meta: {
-              title: t("menus.dashboard.pricing"),
-              icon: "ri:money-cny-box-line",
-              hidden: true,
-              keepAlive: true,
-            },
-            component: () => import("@views/fastlink/pricing/index.vue"),
-          },
-          {
-            path: "article/list",
-            name: "FastlinkArticleList",
-            meta: {
-              title: t("menus.article.articleList"),
-              icon: "ri:article-line",
-              hidden: true,
-              keepAlive: true,
-            },
-            component: () => import("@views/fastlink/article/index.vue"),
-          },
-          {
-            path: "tutorial",
-            name: "FastlinkTutorial",
-            meta: {
-              title: t("menus.dashboard.tutorial"),
-              icon: "ri:book-2-line",
-              hidden: true,
-              keepAlive: true,
-            },
-            component: () => import("@views/fastlink/tutorial/index.vue"),
-          },
-          {
-            path: "fachat",
-            name: "FastlinkFachat",
-            meta: {
-              title: t("menus.fachat.title"),
-              icon: "ri:message-3-line",
-              hidden: true,
-              keepAlive: true,
-            },
-            component: () => import("@views/fastlink/fachat/index.vue"),
+            name: "AccountProfile",
+            meta: { title: "个人资料", icon: "ri:user-line", hidden: true },
+            component: () => import("@views/account/profile/index.vue"),
           },
         ],
-      },
-      /** 支付页面（订单模块子组件） */
-      {
-        path: "payment/:orderId",
-        name: "Payment",
-        component: () => import("@views/module_platform/order/components/PaymentPage.vue"),
-        meta: {
-          title: "订单支付",
-          hidden: true,
-          keepAlive: false,
-        },
-      },
-      /** 租户工作台概览 — 复用自助服务页面 */
-      {
-        path: "workspace",
-        name: "TenantWorkspace",
-        component: () => import("@views/module_platform/self_service/index.vue"),
-        meta: {
-          title: "工作台",
-          hidden: true,
-          keepAlive: false,
-        },
       },
     ],
   },

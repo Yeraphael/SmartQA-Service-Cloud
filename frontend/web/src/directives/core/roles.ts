@@ -1,4 +1,4 @@
-/**
+﻿/**
  * v-roles 角色权限指令
  *
  * 基于用户角色控制 DOM 元素的显示和隐藏。
@@ -41,7 +41,7 @@
  * - 如需基于具体操作的细粒度权限控制，请使用 v-auth 指令
  *
  * @module directives/roles
- * @author FastapiAdmin Team
+ * @author SmartQA
  */
 
 import { useUserStore } from "@stores";

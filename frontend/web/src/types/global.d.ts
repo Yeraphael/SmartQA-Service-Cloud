@@ -1,86 +1,82 @@
-declare global {
+﻿declare global {
   /**
-   * 系统设置
+   * 绯荤粺璁剧疆
    */
   interface AppSettings {
-    /** 系统名称 */
+    /** 绯荤粺鍚嶇О */
     name: string;
-    /** 系统标题 */
+    /** 绯荤粺鏍囬 */
     title: string;
-    /** 系统版本 */
+    /** 绯荤粺鐗堟湰 */
     version: string;
-    /** 是否显示设置按钮 */
+    /** 鏄惁鏄剧ず璁剧疆鎸夐挳 */
     showSettings: boolean;
-    /** 是否显示菜单搜索 */
+    /** 鏄惁鏄剧ず鑿滃崟鎼滅储 */
     showMenuSearch: boolean;
-    /** 是否显示全屏切换 */
+    /** 鏄惁鏄剧ず鍏ㄥ睆鍒囨崲 */
     showFullscreen: boolean;
-    /** 是否显示布局大小 */
+    /** 鏄惁鏄剧ず甯冨眬澶у皬 */
     showSizeSelect: boolean;
-    /** 是否显示语言选择 */
+    /** 鏄惁鏄剧ず璇█閫夋嫨 */
     showLangSelect: boolean;
-    /** 是否显示通知 */
-    showNotification: boolean;
-    /** 是否显示多标签导航 */
+    /** 鏄惁鏄剧ず閫氱煡 */
+    /** 鏄惁鏄剧ず澶氭爣绛惧鑸?*/
     showTagsView: boolean;
-    /** 是否显示应用Logo */
+    /** 鏄惁鏄剧ず搴旂敤Logo */
     showAppLogo: boolean;
-    /** 导航栏布局(left|top|mix) */
+    /** 瀵艰埅鏍忓竷灞€(left|top|mix) */
     layout: "left" | "top" | "mix";
-    /** 主题颜色 */
+    /** 涓婚棰滆壊 */
     themeColor: string;
-    /** 主题模式(dark|light) */
+    /** 涓婚妯″紡(dark|light) */
     theme: import("@/enums/settings/theme.enum").ThemeMode;
-    /** 布局大小(default |large |small) */
+    /** 甯冨眬澶у皬(default |large |small) */
     size: string;
-    /** 语言( zh-cn| en) */
+    /** 璇█( zh-cn| en) */
     language: string;
-    /** 是否显示水印 */
-    showWatermark: boolean;
-    /** 水印内容 */
-    watermarkContent: string;
-    /** 侧边栏配色方案 */
+    /** 鏄惁鏄剧ず姘村嵃 */
+    /** 姘村嵃鍐呭 */
+    /** 渚ц竟鏍忛厤鑹叉柟妗?*/
     sidebarColorScheme: "classic-blue" | "minimal-white";
-    /** 项目引导 */
+    /** 椤圭洰寮曞 */
     guideVisible: boolean;
-    /** 是否启动引导 */
+    /** 鏄惁鍚姩寮曞 */
     showGuide: boolean;
-    /** 是否开启AI助手 */
-    aiEnabled: boolean;
-    /** 是否开启灰色模式 */
+    /** 鏄惁寮€鍚疉I鍔╂墜 */
+    /** 鏄惁寮€鍚伆鑹叉ā寮?*/
     grayMode: boolean;
-    /** 页面切换动画 */
+    /** 椤甸潰鍒囨崲鍔ㄧ敾 */
     pageSwitchingAnimation: string;
   }
 
   /**
-   * 下拉选项数据类型
+   * 涓嬫媺閫夐」鏁版嵁绫诲瀷
    */
   interface OptionType {
-    /** 值 */
+    /** 鍊?*/
     value: string | number;
-    /** 文本 */
+    /** 鏂囨湰 */
     label: string;
-    /** 子列表  */
+    /** 瀛愬垪琛? */
     children?: OptionType[];
   }
 
   /**
-   * 导入结果
+   * 瀵煎叆缁撴灉
    */
   interface ExcelResult {
-    /** 状态码 */
+    /** 鐘舵€佺爜 */
     code: string;
-    /** 无效数据条数 */
+    /** 鏃犳晥鏁版嵁鏉℃暟 */
     invalidCount: number;
-    /** 有效数据条数 */
+    /** 鏈夋晥鏁版嵁鏉℃暟 */
     validCount: number;
-    /** 错误信息 */
+    /** 閿欒淇℃伅 */
     messageList: Array<string>;
   }
 
   /**
-   * 基础响应结构
+   * 鍩虹鍝嶅簲缁撴瀯
    */
   interface ApiResponse<T = any> {
     code: number;
@@ -91,9 +87,8 @@ declare global {
   }
 
   /**
-   * 兼容 web 工程遗留的 `Api.*` 命名空间类型引用
-   * web 目前以真实接口模块导出的类型为准，这里先提供最小声明避免 vue-tsc 阻断。
-   */
+   * 鍏煎 web 宸ョ▼閬楃暀鐨?`Api.*` 鍛藉悕绌洪棿绫诲瀷寮曠敤
+   * web 鐩墠浠ョ湡瀹炴帴鍙ｆā鍧楀鍑虹殑绫诲瀷涓哄噯锛岃繖閲屽厛鎻愪緵鏈€灏忓０鏄庨伩鍏?vue-tsc 闃绘柇銆?   */
   namespace Api {
     namespace Auth {
       interface UserInfo {
@@ -103,15 +98,14 @@ declare global {
   }
 
   /**
-   * 基础查询参数（基础层：状态 + 时间范围）
-   */
+   * 鍩虹鏌ヨ鍙傛暟锛堝熀纭€灞傦細鐘舵€?+ 鏃堕棿鑼冨洿锛?   */
   interface BaseQueryParams {
     created_time?: string[];
     updated_time?: string[];
   }
 
   /**
-   * 审计人查询参数（继承基础查询 + 创建人/更新人）
+   * 瀹¤浜烘煡璇㈠弬鏁帮紙缁ф壙鍩虹鏌ヨ + 鍒涘缓浜?鏇存柊浜猴級
    */
   interface UserByQueryParams extends BaseQueryParams {
     created_id?: number;
@@ -119,24 +113,14 @@ declare global {
   }
 
   /**
-   * 租户查询参数（继承基础查询 + 租户ID）
-   */
-  interface TenantByQueryParams extends BaseQueryParams {
-    tenant_id?: number;
-  }
-
-  /**
-   * 分页查询参数（继承基础查询 + 分页字段）
-   */
+   * 鍒嗛〉鏌ヨ鍙傛暟锛堢户鎵垮熀纭€鏌ヨ + 鍒嗛〉瀛楁锛?   */
   interface PageQuery extends BaseQueryParams {
     page_no: number;
     page_size: number;
   }
 
   /**
-   * 分页响应对象（列表接口 `data` 统一为该结构）
-   * 前端 `useTable` 仅通过 `@utils/table` 的 `defaultResponseAdapter` 解析该形状（及 ApiResponse 包装）
-   */
+   * 鍒嗛〉鍝嶅簲瀵硅薄锛堝垪琛ㄦ帴鍙?`data` 缁熶竴涓鸿缁撴瀯锛?   * 鍓嶇 `useTable` 浠呴€氳繃 `@utils/table` 鐨?`defaultResponseAdapter` 瑙ｆ瀽璇ュ舰鐘讹紙鍙?ApiResponse 鍖呰锛?   */
   interface PageResult<T = any> {
     items: T[];
     total: number;
@@ -146,31 +130,20 @@ declare global {
   }
 
   /**
-   * 创建人
-   */
+   * 鍒涘缓浜?   */
   interface CommonType {
     id?: number;
     name?: string;
   }
 
   /**
-   * 租户
-   */
-  interface TenantType {
-    id?: number;
-    name?: string;
-  }
-
-  /**
-   * 基础表单类型（基础层：仅包含 id）
-   */
+   * 鍩虹琛ㄥ崟绫诲瀷锛堝熀纭€灞傦細浠呭寘鍚?id锛?   */
   interface BaseFormType {
     id?: number;
   }
 
   /**
-   * 基础类型（基础层：包含通用字段）
-   */
+   * 鍩虹绫诲瀷锛堝熀纭€灞傦細鍖呭惈閫氱敤瀛楁锛?   */
   interface BaseType extends BaseFormType {
     index?: number;
     uuid?: string;
@@ -181,11 +154,10 @@ declare global {
     created_by?: CommonType;
     updated_by?: CommonType;
     deleted_by?: CommonType;
-    tenant_by?: TenantType;
   }
 
   /**
-   * 批量操作类型
+   * 鎵归噺鎿嶄綔绫诲瀷
    */
   interface BatchType {
     ids: number[];
@@ -193,7 +165,7 @@ declare global {
   }
 
   /**
-   * 上传文件路径
+   * 涓婁紶鏂囦欢璺緞
    */
   interface UploadFilePath {
     file_path: string;
@@ -203,17 +175,16 @@ declare global {
   }
 
   /**
-   * 通用搜索参数
+   * 閫氱敤鎼滅储鍙傛暟
    */
   type CommonSearchParams = Pick<PageQuery, "page_no" | "page_size">;
 
   /**
-   * 启用状态
-   */
+   * 鍚敤鐘舵€?   */
   type EnableStatus = "0" | "1";
 
   /**
-   * 登录参数
+   * 鐧诲綍鍙傛暟
    */
   interface LoginParams {
     username: string;
@@ -225,7 +196,7 @@ declare global {
   }
 
   /**
-   * 登录响应
+   * 鐧诲綍鍝嶅簲
    */
   interface LoginResponse {
     access_token: string;
@@ -235,7 +206,7 @@ declare global {
   }
 
   /**
-   * 用户信息
+   * 鐢ㄦ埛淇℃伅
    */
   interface UserInfo {
     user_id: number;
@@ -252,7 +223,7 @@ declare global {
   }
 
   /**
-   * 角色信息
+   * 瑙掕壊淇℃伅
    */
   interface RoleInfo {
     id?: number;
@@ -262,13 +233,12 @@ declare global {
   }
 
   /**
-   * 用户列表
+   * 鐢ㄦ埛鍒楄〃
    */
   type UserList = PageResult<UserListItem>;
 
   /**
-   * 用户列表项
-   */
+   * 鐢ㄦ埛鍒楄〃椤?   */
   interface UserListItem {
     id: number;
     avatar: string;
@@ -286,7 +256,7 @@ declare global {
   }
 
   /**
-   * 用户搜索参数
+   * 鐢ㄦ埛鎼滅储鍙傛暟
    */
   type UserSearchParams = Partial<
     Pick<UserListItem, "id" | "userName" | "userGender" | "userPhone" | "userEmail" | "status"> &
@@ -294,13 +264,12 @@ declare global {
   >;
 
   /**
-   * 角色列表
+   * 瑙掕壊鍒楄〃
    */
   type RoleList = PaginatedResponse<RoleListItem>;
 
   /**
-   * 角色列表项
-   */
+   * 瑙掕壊鍒楄〃椤?   */
   interface RoleListItem {
     roleId: number;
     roleName: string;
@@ -311,7 +280,7 @@ declare global {
   }
 
   /**
-   * 角色搜索参数
+   * 瑙掕壊鎼滅储鍙傛暟
    */
   type RoleSearchParams = Partial<
     Pick<RoleListItem, "roleId" | "roleName" | "roleCode" | "description" | "enabled"> &

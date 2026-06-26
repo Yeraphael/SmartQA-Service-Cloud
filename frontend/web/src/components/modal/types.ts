@@ -121,7 +121,7 @@ export interface ISearchConfig {
   /** 重置按钮权限 */
   resetButtonPerm?: string | string[];
   /**
-   * 搜索区形态：与「高级表格」示例一致用 `art`（FaSearchBar + fa-card-xs）；
+   * 搜索区形态：`art` 使用 FaSearchBar + fa-card-xs；
    * `grid` 等复杂布局仍走 `legacy`（或显式传 legacy）
    */
   searchVariant?: "legacy" | "art";
@@ -137,7 +137,7 @@ export interface ISearchConfig {
   /** art 搜索区默认展开全部筛选项（对应 FaSearchBar defaultExpanded） */
   searchDefaultExpanded?: boolean;
   /**
-   * art 搜索区内控件最大宽度（不传则不限制，与 FaSearchBar 示例一致）。
+   * art 搜索区内控件最大宽度（不传则不限制）。
    * 需要限制时再传，如 `"200px"`、`"min(100%, 280px)"`；`false` 显式铺满栅格列。
    */
   artSearchFieldMaxWidth?: string | false;

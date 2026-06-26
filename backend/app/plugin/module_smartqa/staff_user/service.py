@@ -1,17 +1,19 @@
 """客服账号初始化服务。"""
 
-import secrets
-import string
+import hashlib
 from datetime import datetime
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.v1.module_system.user.model import UserModel
+from app.api.v1.module_system.role.model import RoleModel
+from app.api.v1.module_system.user.model import UserModel, UserRolesModel
 from app.core.base_schema import AuthSchema
 from app.core.exceptions import CustomException
 from app.plugin.module_smartqa.models.dimension import DimStaffModel
 from app.utils.hash_bcrpy_util import PwdUtil
+
+DEFAULT_STAFF_PASSWORD = "SmartQA@123456"
 
 
 class StaffUserService:
@@ -51,7 +53,7 @@ class StaffUserService:
                     skipped_count += 1
                     continue
 
-                username = self._generate_username(staff.staff_key, staff.staff_name)
+                username = self._generate_username(staff.primary_account)
 
                 existing_user_stmt = select(UserModel).where(
                     UserModel.username == username,
@@ -69,22 +71,21 @@ class StaffUserService:
                         skipped_count += 1
                     continue
 
-                initial_password = self._generate_password()
-
                 new_user = UserModel(
                     username=username,
                     name=staff.staff_name,
-                    password=PwdUtil.hash_password(initial_password),
-                    email=f"{username}@smartqa.local",
+                    password=PwdUtil.hash_password(DEFAULT_STAFF_PASSWORD),
+                    email=None,
                     mobile=None,
                     avatar=None,
                     status=0,
                     is_superuser=False,
-                tenant_id=self.auth.tenant_id or 1,
-                created_id=self.auth.user_id,
+                    tenant_id=self.auth.tenant_id or 1,
+                    created_id=self.auth.user.id if self.auth.user else None,
                 )
                 session.add(new_user)
                 await session.flush()
+                await self._ensure_staff_role(session, new_user.id)
 
                 staff.sys_user_id = new_user.id
                 staff.updated_time = datetime.now()
@@ -105,7 +106,84 @@ class StaffUserService:
             "created": created_count,
             "skipped": skipped_count,
             "errors": errors,
+            "default_password": DEFAULT_STAFF_PASSWORD,
         }
+
+    async def ensure_staff_user(self, session: AsyncSession, staff_id: int, password: str = DEFAULT_STAFF_PASSWORD) -> dict:
+        """为单个客服创建或补绑定系统账号。"""
+        staff = await self._get_staff(session, staff_id)
+        if staff.sys_user_id:
+            user = await session.get(UserModel, staff.sys_user_id)
+            if user:
+                await self._ensure_staff_role(session, user.id)
+                await session.commit()
+                return {"staff_id": staff.id, "sys_user_id": user.id, "username": user.username, "created": False}
+
+        username = self._generate_username(staff.primary_account)
+        result = await session.execute(
+            select(UserModel).where(
+                UserModel.username == username,
+                UserModel.tenant_id == (self.auth.tenant_id or 1),
+                UserModel.is_deleted == False,  # noqa: E712
+            )
+        )
+        user = result.scalar_one_or_none()
+        created = False
+        if not user:
+            user = UserModel(
+                username=username,
+                name=staff.staff_name,
+                password=PwdUtil.hash_password(password),
+                email=None,
+                mobile=None,
+                avatar=None,
+                status=0,
+                is_superuser=False,
+                tenant_id=self.auth.tenant_id or 1,
+                created_id=self.auth.user.id if self.auth.user else None,
+            )
+            session.add(user)
+            await session.flush()
+            created = True
+
+        await self._ensure_staff_role(session, user.id)
+        staff.sys_user_id = user.id
+        staff.updated_time = datetime.now()
+        staff.updated_id = self.auth.user.id if self.auth.user else None
+        await session.commit()
+        return {"staff_id": staff.id, "sys_user_id": user.id, "username": user.username, "created": created}
+
+    async def reset_staff_password(self, session: AsyncSession, staff_id: int, password: str = DEFAULT_STAFF_PASSWORD) -> dict:
+        """重置客服系统账号密码。"""
+        staff = await self._get_staff(session, staff_id)
+        if not staff.sys_user_id:
+            raise CustomException("客服尚未绑定系统账号")
+        user = await session.get(UserModel, staff.sys_user_id)
+        if not user or user.is_deleted:
+            raise CustomException("绑定的系统账号不存在")
+        if user.is_superuser:
+            raise CustomException("不能重置超级管理员密码")
+        user.password = PwdUtil.hash_password(password)
+        user.updated_time = datetime.now()
+        user.updated_id = self.auth.user.id if self.auth.user else None
+        await session.commit()
+        return {"staff_id": staff.id, "sys_user_id": user.id, "username": user.username}
+
+    async def set_staff_user_status(self, session: AsyncSession, staff_id: int, status: int) -> dict:
+        """启停客服系统账号。"""
+        staff = await self._get_staff(session, staff_id)
+        if not staff.sys_user_id:
+            raise CustomException("客服尚未绑定系统账号")
+        user = await session.get(UserModel, staff.sys_user_id)
+        if not user or user.is_deleted:
+            raise CustomException("绑定的系统账号不存在")
+        if user.is_superuser:
+            raise CustomException("不能修改超级管理员状态")
+        user.status = status
+        user.updated_time = datetime.now()
+        user.updated_id = self.auth.user.id if self.auth.user else None
+        await session.commit()
+        return {"staff_id": staff.id, "sys_user_id": user.id, "username": user.username, "status": user.status}
 
     async def bind_user(self, session: AsyncSession, staff_id: int, user_id: int) -> DimStaffModel:
         """手动绑定客服到系统用户。"""
@@ -129,7 +207,8 @@ class StaffUserService:
 
         staff.sys_user_id = user_id
         staff.updated_time = datetime.now()
-        staff.updated_id = self.auth.user_id
+        staff.updated_id = self.auth.user.id if self.auth.user else None
+        await self._ensure_staff_role(session, user_id)
 
         await session.commit()
         return staff
@@ -147,7 +226,7 @@ class StaffUserService:
 
         staff.sys_user_id = None
         staff.updated_time = datetime.now()
-        staff.updated_id = self.auth.user_id
+        staff.updated_id = self.auth.user.id if self.auth.user else None
 
         await session.commit()
         return staff
@@ -182,11 +261,38 @@ class StaffUserService:
             for staff, user in rows
         ]
 
-    def _generate_username(self, staff_key: str, staff_name: str) -> str:
-        """生成用户名：staff_开头 + staff_key后8位。"""
-        return f"staff_{staff_key[-8:]}"
+    async def _get_staff(self, session: AsyncSession, staff_id: int) -> DimStaffModel:
+        result = await session.execute(
+            select(DimStaffModel).where(
+                DimStaffModel.id == staff_id,
+                DimStaffModel.is_deleted == False,  # noqa: E712
+            )
+        )
+        staff = result.scalar_one_or_none()
+        if not staff:
+            raise CustomException("客服不存在")
+        return staff
 
-    def _generate_password(self, length: int = 12) -> str:
-        """生成随机初始密码。"""
-        alphabet = string.ascii_letters + string.digits
-        return "".join(secrets.choice(alphabet) for _ in range(length))
+    async def _ensure_staff_role(self, session: AsyncSession, user_id: int) -> None:
+        result = await session.execute(
+            select(RoleModel).where(
+                RoleModel.code == "smartqa_staff",
+                RoleModel.tenant_id == (self.auth.tenant_id or 1),
+                RoleModel.is_deleted == False,  # noqa: E712
+            )
+        )
+        role = result.scalar_one_or_none()
+        if role:
+            exists = await session.execute(
+                select(UserRolesModel).where(
+                    UserRolesModel.user_id == user_id,
+                    UserRolesModel.role_id == role.id,
+                )
+            )
+            if not exists.scalar_one_or_none():
+                session.add(UserRolesModel(user_id=user_id, role_id=role.id))
+
+    def _generate_username(self, primary_account: str) -> str:
+        """生成与数据管道一致的客服登录账号。"""
+        digest = hashlib.sha256(primary_account.encode("utf-8")).hexdigest()[:10]
+        return f"staff_{digest}"

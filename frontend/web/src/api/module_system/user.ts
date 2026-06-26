@@ -1,5 +1,5 @@
 import { request } from "@utils";
-import { MenuTable, MenuForm } from "@/api/module_platform/menu";
+import type { MenuTable, MenuForm } from "@/types/menu";
 
 const API_PATH = "/system/user";
 
@@ -30,24 +30,8 @@ export const UserAPI = {
 
   changeCurrentUserPassword(body: PasswordFormState) {
     return request<ApiResponse>({
-      url: `${API_PATH}/current/password/change`,
+      url: `${API_PATH}/password/change`,
       method: "put",
-      data: body,
-    });
-  },
-
-  resetUserPassword(id: number, body: ResetPasswordForm) {
-    return request<ApiResponse>({
-      url: `${API_PATH}/password/reset/${id}`,
-      method: "put",
-      data: body,
-    });
-  },
-
-  registerUser(body: RegisterForm) {
-    return request<ApiResponse<UserInfo>>({
-      url: `${API_PATH}/register`,
-      method: "post",
       data: body,
     });
   },
@@ -59,81 +43,6 @@ export const UserAPI = {
       data: body,
     });
   },
-
-  listUser(query: UserPageQuery) {
-    return request<ApiResponse<PageResult<UserInfo>>>({
-      url: `${API_PATH}/list`,
-      method: "get",
-      params: query,
-    });
-  },
-
-  detailUser(id: number) {
-    return request<ApiResponse<UserInfo>>({
-      url: `${API_PATH}/detail/${id}`,
-      method: "get",
-    });
-  },
-
-  createUser(body: UserForm) {
-    return request<ApiResponse>({
-      url: `${API_PATH}/create`,
-      method: "post",
-      data: body,
-    });
-  },
-
-  updateUser(id: number, body: UserForm) {
-    return request<ApiResponse>({
-      url: `${API_PATH}/update/${id}`,
-      method: "put",
-      data: body,
-    });
-  },
-
-  deleteUser(body: number[]) {
-    return request<ApiResponse>({
-      url: `${API_PATH}/delete`,
-      method: "delete",
-      data: body,
-    });
-  },
-
-  batchUser(body: BatchType) {
-    return request<ApiResponse>({
-      url: `${API_PATH}/status/batch`,
-      method: "patch",
-      data: body,
-    });
-  },
-
-  exportUser(query: UserPageQuery) {
-    return request<Blob>({
-      url: `${API_PATH}/export`,
-      method: "get",
-      params: query,
-      responseType: "blob",
-    });
-  },
-
-  downloadTemplateUser() {
-    return request<ApiResponse>({
-      url: `${API_PATH}/import/template`,
-      method: "get",
-      responseType: "blob",
-    });
-  },
-
-  importUser(body: any) {
-    return request<ApiResponse>({
-      url: `${API_PATH}/import/data`,
-      method: "post",
-      data: body,
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
-  },
 };
 
 export default UserAPI;
@@ -143,26 +52,6 @@ export interface ForgetPasswordForm {
   new_password: string;
   mobile?: string;
   confirmPassword: string;
-}
-
-export interface RegisterForm {
-  username: string;
-  password: string;
-  confirmPassword: string;
-  email?: string;
-}
-
-export interface UserPageQuery extends PageQuery, UserByQueryParams, TenantByQueryParams {
-  username?: string;
-  name?: string;
-  mobile?: string;
-  email?: string;
-  dept_id?: number;
-}
-
-export interface searchSelectDataType {
-  name?: string;
-  status?: number;
 }
 
 export interface UserInfo extends BaseType {
@@ -188,12 +77,6 @@ export interface UserInfo extends BaseType {
   created_by?: CommonType;
   updated_by?: CommonType;
   deleted_by?: CommonType;
-  tenant_id?: number;
-  tenant_name?: string;
-  gitee_login?: string;
-  github_login?: string;
-  wx_login?: string;
-  qq_login?: string;
   status?: number;
   description?: string;
 }
@@ -237,47 +120,10 @@ export interface InfoFormState {
   updated_time?: string;
   status?: number;
   description?: string;
-  tenant_by?: { id?: number; name?: string };
-  gitee_login?: string;
-  github_login?: string;
-  wx_login?: string;
-  qq_login?: string;
 }
 
 export interface PasswordFormState {
   old_password: string;
   new_password: string;
   confirm_password: string;
-}
-
-export interface ResetPasswordForm {
-  password: string;
-}
-
-export interface UserForm extends BaseFormType {
-  username?: string;
-  name?: string;
-  dept_id?: number;
-  dept_name?: string;
-  role_ids?: number[];
-  role_names?: string[];
-  position_ids?: number[];
-  position_names?: string[];
-  password?: string;
-  gender?: number;
-  email?: string;
-  mobile?: string;
-  is_superuser?: boolean;
-  avatar?: string;
-  tenant_id?: number;
-  status?: number;
-  description?: string;
-}
-
-export interface CurrentUserFormState {
-  name?: string;
-  gender?: number;
-  mobile?: string;
-  email?: string;
-  avatar?: string;
 }

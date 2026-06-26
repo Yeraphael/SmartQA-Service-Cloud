@@ -116,14 +116,12 @@ def register_exceptions(app: FastAPI) -> None:
 
 def register_routers(app: FastAPI) -> None:
     from app.api.v1.module_common import common_router
-    from app.api.v1.module_monitor import monitor_router
     from app.api.v1.module_platform import platform_router
     from app.api.v1.module_system import system_router
 
     http_limiter = [Depends(RateLimiter(times=200, seconds=10))] if settings.REDIS_ENABLE else []
 
     app.include_router(common_router, dependencies=http_limiter)
-    app.include_router(monitor_router, dependencies=http_limiter)
     app.include_router(platform_router, dependencies=http_limiter)
     app.include_router(system_router, dependencies=http_limiter)
 

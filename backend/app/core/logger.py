@@ -46,7 +46,7 @@ def setup_logger() -> None:
         stdout = io.TextIOWrapper(stdout.buffer, encoding="utf-8", errors="replace", line_buffering=True)
     logger.add(stdout, format=LOG_FMT, level=settings.LOGGER_LEVEL)
     logger.add(
-        str(LOG_DIR / "fastapiadmin.log"),
+        str(LOG_DIR / "smartqa.log"),
         format=LOG_FMT,
         level="INFO",
         rotation="00:00",

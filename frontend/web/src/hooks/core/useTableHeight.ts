@@ -1,4 +1,4 @@
-/**
+﻿/**
  * useTableHeight - 表格高度自动计算
  *
  * 自动计算表格容器的最佳高度，确保表格在不同布局场景下都能正确显示。
@@ -12,7 +12,7 @@
  * 4. 智能适配 - 无额外元素时自动使用 100% 高度
  *
  * @module useTableHeight
- * @author FastapiAdmin Team
+ * @author SmartQA
  */
 
 import { computed, type Ref } from "vue";

@@ -67,11 +67,14 @@
           <ElTableColumn prop="deduction_score" label="扣分" width="80" />
           <ElTableColumn prop="title" label="问题" min-width="180" show-overflow-tooltip />
           <ElTableColumn prop="reason" label="原因" min-width="220" show-overflow-tooltip />
+          <ElTableColumn prop="suggested_action" label="建议动作" min-width="220" show-overflow-tooltip />
+          <ElTableColumn prop="suggested_reply" label="推荐话术" min-width="220" show-overflow-tooltip />
         </ElTable>
         <ElTable :data="detail.evidences" row-key="evidence_id">
-          <ElTableColumn prop="message_id" label="证据消息" min-width="150" show-overflow-tooltip />
           <ElTableColumn prop="speaker_type" label="角色" width="80" />
-          <ElTableColumn prop="content_text" label="内容" min-width="300" show-overflow-tooltip />
+          <ElTableColumn prop="speaker_account" label="账号" min-width="140" show-overflow-tooltip />
+          <ElTableColumn prop="content_text" label="证据消息" min-width="360" show-overflow-tooltip />
+          <ElTableColumn prop="message_time" label="时间" min-width="170" show-overflow-tooltip />
         </ElTable>
       </div>
     </ElDrawer>

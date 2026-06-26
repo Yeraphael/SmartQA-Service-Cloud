@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 图表组件类型定义模块
  *
  * 提供 ECharts 图表组件的完整类型定义
@@ -25,7 +25,7 @@
  * - 图表事件处理
  *
  * @module types/component/chart
- * @author FastapiAdmin Team
+ * @author SmartQA
  */
 import type { EChartsOption } from "@/plugins/echarts";
 

@@ -126,11 +126,20 @@
   "setting": {
     "menuType": {
       "title": "Menu Layout",
-      "list": ["Vertical", "Horizontal", "Mixed", "Dual"]
+      "list": [
+        "Vertical",
+        "Horizontal",
+        "Mixed",
+        "Dual"
+      ]
     },
     "theme": {
       "title": "Theme Style",
-      "list": ["Light", "Dark", "System"]
+      "list": [
+        "Light",
+        "Dark",
+        "System"
+      ]
     },
     "menu": {
       "title": "Menu Style"
@@ -140,11 +149,17 @@
     },
     "box": {
       "title": "Box Style",
-      "list": ["Border", "Shadow"]
+      "list": [
+        "Border",
+        "Shadow"
+      ]
     },
     "container": {
       "title": "Container Width",
-      "list": ["Full", "Boxed"]
+      "list": [
+        "Full",
+        "Boxed"
+      ]
     },
     "basics": {
       "title": "Basic Config",
@@ -159,14 +174,11 @@
         "menuSearch": "Show global menu search",
         "fullscreenTool": "Show fullscreen toggle",
         "layoutSize": "Show component size selector",
-        "notificationTool": "Show notification entry",
         "progressBar": "Show top progress bar",
         "weakMode": "Color Weakness Mode",
-        "watermark": "Global watermark",
         "appLogo": "Show app logo & system title",
         "loginGuide": "Show onboarding guide after login",
         "grayMode": "Grayscale mode",
-        "aiAssistant": "Enable AI assistant entry",
         "menuWidth": "Menu width",
         "tabStyle": "Tab style",
         "pageTransition": "Page animation",
@@ -198,11 +210,20 @@
   "settings": {
     "menuType": {
       "title": "Menu Layout",
-      "list": ["Vertical", "Horizontal", "Mixed", "Dual"]
+      "list": [
+        "Vertical",
+        "Horizontal",
+        "Mixed",
+        "Dual"
+      ]
     },
     "theme": {
       "title": "Theme Style",
-      "list": ["Light", "Dark", "System"]
+      "list": [
+        "Light",
+        "Dark",
+        "System"
+      ]
     },
     "menu": {
       "title": "Menu Style"
@@ -212,11 +233,17 @@
     },
     "box": {
       "title": "Box Style",
-      "list": ["Border", "Shadow"]
+      "list": [
+        "Border",
+        "Shadow"
+      ]
     },
     "container": {
       "title": "Container Width",
-      "list": ["Full", "Boxed"]
+      "list": [
+        "Full",
+        "Boxed"
+      ]
     },
     "basics": {
       "title": "Basic Config",
@@ -230,11 +257,9 @@
         "language": "Show multilingual selection",
         "progressBar": "Show top progress bar",
         "weakMode": "Color Weakness Mode",
-        "watermark": "Global watermark",
         "appLogo": "Show app logo & system title",
         "loginGuide": "Show onboarding guide after login",
         "grayMode": "Grayscale mode",
-        "aiAssistant": "Enable AI assistant entry",
         "menuWidth": "Menu width",
         "tabStyle": "Tab style",
         "pageTransition": "Page animation",
@@ -272,16 +297,13 @@
     "sidebarColorScheme": "Sidebar Color Scheme",
     "showTagsView": "Show Tags View",
     "showAppLogo": "Show App Logo",
-    "showWatermark": "Show Watermark",
     "grayMode": "Gray Mode",
-    "userEnableAi": "Enable AI Assistant",
     "pageSwitchingAnimation": "Page Switching Animation",
     "showDesktopTools": "Tools Settings",
     "showMenuSearch": "Show Menu Search",
     "showFullscreen": "Show Fullscreen Toggle",
     "showSizeSelect": "Show Layout Size",
     "showLangSelect": "Show Language Select",
-    "showNotification": "Show Notification",
     "classicBlue": "Classic Blue",
     "minimalWhite": "Minimal White",
     "leftLayout": "Left Mode",
@@ -309,8 +331,14 @@
   "notice": {
     "title": "Notice",
     "btnRead": "Mark as read",
-    "bar": ["Notice", "Message", "Todo"],
-    "text": ["No"],
+    "bar": [
+      "Notice",
+      "Message",
+      "Todo"
+    ],
+    "text": [
+      "No"
+    ],
     "viewAll": "View all"
   },
   "worktab": {
@@ -344,24 +372,8 @@
     "subTitle": "Enter your account details to start managing your project",
     "versionLabel": "Version",
     "quickSelectAccount": "Quick select account",
-    "mobileLogin": "Mobile login",
-    "mobileLoginSubTitle": "Enter your mobile number to start managing your projects",
-    "mobilePhonePlaceholder": "Mobile number",
-    "getSmsCode": "Get code",
-    "smsCodeSentMock": "Verification code sent (demo only)",
-    "smsCodeRequired": "Enter the 6-digit SMS code",
-    "mobileLoginPending": "Mobile login API is not connected yet — UI preview only",
     "backToAccountLogin": "Back",
-    "qrLogin": "QR code login",
-    "qrLoginTitle": "Welcome back 📱",
-    "qrLoginSubTitle": "Scan the QR code with your phone to sign in",
-    "qrLoginHint": "After scanning, tap Confirm on your phone to finish signing in",
-    "oauthNoticeTitle": "Notice",
-    "oauthLoginSuccess": "Signed in with your social account",
-    "oauthLoginFailed": "Social sign-in failed. Try username and password.",
-    "comingSoon": "Coming soon",
     "accountLoginTab": "Account",
-    "quickLoginTab": "Quick login",
     "roles": {
       "super": "Super Admin",
       "admin": "Admin",
@@ -378,8 +390,6 @@
     "forgetPwd": "Forgot password",
     "btnText": "Login",
     "backLoginBtnText": "Back to Login",
-    "noAccount": "No account yet?",
-    "register": "Register",
     "success": {
       "title": "Login successful",
       "message": "Welcome back"
@@ -406,43 +416,10 @@
       },
       "captchaCode": {
         "required": "Please enter Verify Code"
-      },
-      "mobile": {
-        "required": "Please enter mobile number",
-        "invalid": "Invalid mobile number format",
-        "exist": "Mobile number already exists"
-      },
-      "email": {
-        "required": "Please enter email",
-        "invalid": "Invalid email format",
-        "exist": "Email already exists"
-      },
-      "name": {
-        "required": "Please enter account",
-        "invalid": "Invalid account format",
-        "min": "Account cannot be less than 2 characters"
-      },
-      "agree": {
-        "required": "Please agree to the User Agreement"
       }
     },
-    "oauthTooltip": {
-      "wechat": "WeChat",
-      "qq": "QQ",
-      "github": "GitHub",
-      "gitee": "Gitee"
-    },
-    "otherLoginMethods": "Other",
     "resetPassword": "Reset password",
     "thinkOfPasswd": "Remember your password?",
-    "agree": "I have read and agree to the",
-    "userAgreement": "User Agreement",
-    "haveAccount": "Already have an account?",
-    "noAccountText": "Don't have an account?",
-    "quickFill": "Quick fill",
-    "quickLoginTip": "Click user avatar to login quickly",
-    "selectUser": "Select a user",
-    "reg": "Register",
     "panelAlign": {
       "label": "Column layout",
       "left": "Wide illustration",
@@ -459,28 +436,6 @@
     "placeholder": "Please enter your email",
     "submitBtnText": "Submit",
     "backBtnText": "Back"
-  },
-  "register": {
-    "title": "Create account",
-    "subTitle": "Welcome to join us, please fill in the following information to complete the registration",
-    "placeholder": {
-      "username": "Please enter account",
-      "password": "Please enter password",
-      "confirmPassword": "Please enter password again",
-      "email": "Please enter email"
-    },
-    "rule": {
-      "confirmPasswordRequired": "Please enter your password again",
-      "passwordMismatch": "The two passwords are inconsistent!",
-      "usernameLength": "Length is 3 to 20 characters",
-      "passwordLength": "Password length cannot be less than 6 digits",
-      "agreementRequired": "Please agree to privacy policy"
-    },
-    "agreeText": "I agree",
-    "privacyPolicy": "Privacy policy",
-    "submitBtnText": "Register",
-    "hasAccount": "Already have an account?",
-    "toLogin": "To login"
   },
   "lock": {
     "unlock": "Click to unlock",
@@ -546,9 +501,6 @@
     },
     "workplace": {
       "title": "Workbench"
-    },
-    "fachat": {
-      "title": "Fachat"
     },
     "changelog": {
       "title": "Release notes"

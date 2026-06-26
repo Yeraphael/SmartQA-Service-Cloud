@@ -130,13 +130,7 @@ export default ({ mode }: { mode: string }) => {
             if (!id.includes("node_modules")) return;
             if (id.includes("echarts") || id.includes("zrender")) return "echarts";
             if (id.includes("element-plus")) return "element-plus";
-            if (id.includes("@wangeditor")) return "wangeditor";
-            if (id.includes("codemirror")) return "codemirror";
             if (id.includes("exceljs")) return "exceljs";
-            if (id.includes("@vue-flow") || id.includes("dagre")) return "vue-flow";
-            if (id.includes("highlight.js") || id.includes("highlightjs")) return "highlight";
-            if (id.includes("xgplayer")) return "xgplayer";
-            if (id.includes("markdown-it")) return "markdown";
             if (id.includes("@iconify-json")) return "iconify-icons";
             if (id.includes("xlsx")) return "xlsx";
             if (id.includes("crypto-js")) return "crypto";
@@ -230,17 +224,9 @@ export default ({ mode }: { mode: string }) => {
     ],
     optimizeDeps: {
       include: [
-        "@vue-flow/core",
-        "@vue-flow/background",
-        "@vue-flow/controls",
-        "@vue-flow/minimap",
         "vue",
         "vue-router",
         "vue-i18n",
-        "vue-json-pretty",
-        "vue-web-terminal",
-        "vue3-cron-plus",
-        "vuedraggable",
         "vue-draggable-plus",
         "element-plus",
         "@element-plus/icons-vue",
@@ -250,10 +236,6 @@ export default ({ mode }: { mode: string }) => {
         "pinia",
         "axios",
         "@vueuse/core",
-        "codemirror",
-        "codemirror-editor-vue3",
-        "@wangeditor-next/editor",
-        "@wangeditor-next/editor-for-vue",
         "exceljs",
         "echarts/core",
         "echarts/renderers",
@@ -263,17 +245,10 @@ export default ({ mode }: { mode: string }) => {
         "qs",
         "path-to-regexp",
         "path-browserify",
-        "xgplayer",
         "@iconify/vue",
-        "qrcode.vue",
         "xlsx",
-        "highlight.js",
-        "dagre",
         "dompurify",
         "js-beautify",
-        "markdown-it",
-        "markdown-it-highlightjs",
-        "clipboard",
         "crypto-js",
         "file-saver",
         "mitt",

@@ -1,4 +1,4 @@
-<!-- 顶部栏 -->
+﻿<!-- 椤堕儴鏍?-->
 <template>
   <div
     class="w-full bg-(--default-bg-color)"
@@ -17,7 +17,7 @@
       ]"
     >
       <div class="flex items-center flex-1 min-w-0 leading-15" :style="{ display: 'flex' }">
-        <!-- 系统信息：Logo + 标题一并受「显示应用 Logo」控制 -->
+        <!-- 绯荤粺淇℃伅锛歀ogo + 鏍囬涓€骞跺彈銆屾樉绀哄簲鐢?Logo銆嶆帶鍒?-->
         <div
           class="flex items-center cursor-pointer"
           @click="toHome"
@@ -34,7 +34,7 @@
           @click="toHome"
         />
 
-        <!-- 菜单按钮 -->
+        <!-- 鑿滃崟鎸夐挳 -->
         <FaIconButton
           v-if="isLeftMenu && shouldShowMenuButton"
           icon="ri:menu-2-fill"
@@ -42,7 +42,7 @@
           @click="visibleMenu"
         />
 
-        <!-- 刷新按钮 -->
+        <!-- 鍒锋柊鎸夐挳 -->
         <FaIconButton
           v-if="shouldShowRefreshButton"
           icon="ri:refresh-line"
@@ -51,25 +51,25 @@
           @click="reload"
         />
 
-        <!-- 快速入口 -->
+        <!-- 蹇€熷叆鍙?-->
         <FaFastEnter v-if="shouldShowFastEnter && width >= headerBarFastEnterMinWidth">
           <FaIconButton icon="ri:function-line" class="ml-3" />
         </FaFastEnter>
 
-        <!-- 面包屑 -->
+        <!-- 闈㈠寘灞?-->
         <FaBreadcrumb
           v-if="(shouldShowBreadcrumb && isLeftMenu) || (shouldShowBreadcrumb && isDualMenu)"
         />
 
-        <!-- 顶部菜单 -->
+        <!-- 椤堕儴鑿滃崟 -->
         <FaHorizontalMenu v-if="isTopMenu" :list="menuList" />
 
-        <!-- 混合菜单-顶部 -->
+        <!-- 娣峰悎鑿滃崟-椤堕儴 -->
         <FaMixedMenu v-if="isTopLeftMenu" :list="menuList" />
       </div>
 
       <div id="app-header-toolbar" class="flex items-center gap-2.5">
-        <!-- 搜索 -->
+        <!-- 鎼滅储 -->
         <div
           v-if="shouldShowGlobalSearch"
           class="flex items-center justify-between w-40 h-9 px-2.5 cursor-pointer border border-g-400 rounded-custom-sm max-md:hidden! transition duration-300 hover:-translate-y-0.5 hover:shadow-md"
@@ -86,7 +86,7 @@
           </div>
         </div>
 
-        <!-- 全屏按钮 -->
+        <!-- 鍏ㄥ睆鎸夐挳 -->
         <FaIconButton
           v-if="shouldShowFullscreen"
           :icon="isFullscreen ? 'ri:fullscreen-exit-line' : 'ri:fullscreen-fill'"
@@ -95,7 +95,7 @@
           @click="toggleFullScreen"
         />
 
-        <!-- 组件尺寸 default/large/small（沿用旧版持久化开关 showSizeSelect） -->
+        <!-- 缁勪欢灏哄 default/large/small锛堟部鐢ㄦ棫鐗堟寔涔呭寲寮€鍏?showSizeSelect锛?-->
         <div
           v-if="shouldShowSizeSelect"
           class="flex items-center justify-center ml-1 max-md:hidden!"
@@ -103,7 +103,7 @@
           <FaSizeSelect />
         </div>
 
-        <!-- 国际化按钮 -->
+        <!-- 鍥介檯鍖栨寜閽?-->
         <ElDropdown
           @command="changeLanguage"
           popper-class="langDropDownStyle"
@@ -125,27 +125,7 @@
           </template>
         </ElDropdown>
 
-        <!-- 通知按钮 -->
-        <FaIconButton
-          v-if="shouldShowNotification"
-          icon="ri:notification-2-line"
-          class="notice-button relative"
-          @click="visibleNotice"
-        >
-          <div class="absolute top-2 right-2 size-1.5 bg-danger! rounded-full"></div>
-        </FaIconButton>
-
-        <!-- 聊天按钮 -->
-        <FaIconButton
-          v-if="shouldShowChat"
-          icon="ri:message-3-line"
-          class="chat-button relative"
-          @click="openChat"
-        >
-          <div class="breathing-dot absolute top-2 right-2 size-1.5 bg-success! rounded-full"></div>
-        </FaIconButton>
-
-        <!-- 设置按钮 -->
+        <!-- 璁剧疆鎸夐挳 -->
         <div v-if="shouldShowSettings">
           <ElPopover :visible="showSettingGuide" placement="bottom-start" :width="190" :offset="0">
             <template #reference>
@@ -157,34 +137,27 @@
               <p>
                 {{ $t("topBar.guide.title") }}
                 <span :style="{ color: systemThemeColor }">{{ $t("topBar.guide.theme") }}</span>
-                、
-                <span :style="{ color: systemThemeColor }">{{ $t("topBar.guide.menu") }}</span>
+                銆?                <span :style="{ color: systemThemeColor }">{{ $t("topBar.guide.menu") }}</span>
                 {{ $t("topBar.guide.description") }}
               </p>
             </template>
           </ElPopover>
         </div>
 
-        <!-- 主题切换按钮 -->
+        <!-- 涓婚鍒囨崲鎸夐挳 -->
         <FaIconButton
           v-if="shouldShowThemeToggle"
           @click="themeAnimation"
           :icon="isDark ? 'ri:sun-fill' : 'ri:moon-line'"
         />
 
-        <!-- 租户切换器（全局可见，1步切换） -->
-        <FaTenantSwitcher />
-
-        <!-- 用户头像、菜单 -->
+        <!-- 鐢ㄦ埛澶村儚銆佽彍鍗?-->
         <FaUserMenu />
       </div>
     </div>
 
-    <!-- 标签页 -->
+    <!-- 鏍囩椤?-->
     <FaWorkTab />
-
-    <!-- 通知 -->
-    <FaNotification v-model:value="showNotice" ref="notice" />
   </div>
 </template>
 
@@ -200,11 +173,9 @@ import { mittBus, themeAnimation } from "@utils";
 import { useCommon } from "@/hooks/core/useCommon";
 import { useHeaderBar } from "@/hooks/core/useHeaderBar";
 import FaUserMenu from "./widgets/FaUserMenu.vue";
-import FaTenantSwitcher from "./widgets/FaTenantSwitcher.vue";
 
 defineOptions({ name: "FaHeaderBar" });
 
-// 检测操作系统类型
 const isWindows = navigator.userAgent.includes("Windows");
 
 const router = useRouter();
@@ -216,7 +187,7 @@ const userStore = useUserStore();
 const menuStore = useMenuStore();
 const configStore = useConfigStore();
 
-/** 租户配置：tenant_logo / tenant_name */
+/** 公司展示配置：底座兼容键 tenant_logo / tenant_name */
 const headerLogoSrc = computed(() => {
   const raw = configStore.configData.tenant_logo?.config_value;
   return typeof raw === "string" && raw.trim() ? raw.trim() : undefined;
@@ -228,7 +199,6 @@ const headerSystemName = computed(() => {
   return AppConfig.systemInfo.name;
 });
 
-// 顶部栏功能配置
 const {
   shouldShowMenuButton,
   shouldShowRefreshButton,
@@ -236,8 +206,6 @@ const {
   shouldShowBreadcrumb,
   shouldShowGlobalSearch,
   shouldShowFullscreen,
-  shouldShowNotification,
-  shouldShowChat,
   shouldShowLanguage,
   shouldShowSettings,
   shouldShowThemeToggle,
@@ -251,10 +219,8 @@ const { menuOpen, systemThemeColor, showSettingGuide, menuType, isDark, tabStyle
 const { language } = storeToRefs(userStore);
 const { menuList } = storeToRefs(menuStore);
 
-const showNotice = ref(false);
-const notice = ref(null);
 
-// 菜单类型判断
+// 鑿滃崟绫诲瀷鍒ゆ柇
 const isLeftMenu = computed(() => menuType.value === MenuTypeEnum.LEFT);
 const isDualMenu = computed(() => menuType.value === MenuTypeEnum.DUAL_MENU);
 const isTopMenu = computed(() => menuType.value === MenuTypeEnum.TOP);
@@ -264,23 +230,16 @@ const { isFullscreen, toggle: toggleFullscreen } = useFullscreen();
 
 onMounted(() => {
   initLanguage();
-  document.addEventListener("click", bodyCloseNotice);
-});
-
-onUnmounted(() => {
-  document.removeEventListener("click", bodyCloseNotice);
 });
 
 /**
- * 切换全屏状态
- */
+ * 鍒囨崲鍏ㄥ睆鐘舵€? */
 const toggleFullScreen = (): void => {
   toggleFullscreen();
 };
 
 /**
- * 切换菜单显示/隐藏状态
- */
+ * 鍒囨崲鑿滃崟鏄剧ず/闅愯棌鐘舵€? */
 const visibleMenu = (): void => {
   settingStore.setMenuOpen(!menuOpen.value);
 };
@@ -289,15 +248,14 @@ const { homePath } = useCommon();
 const { refresh } = useCommon();
 
 /**
- * 跳转到首页
- */
+ * 璺宠浆鍒伴椤? */
 const toHome = (): void => {
   router.push(homePath.value);
 };
 
 /**
- * 刷新页面
- * @param {number} time - 延迟时间，默认为0毫秒
+ * 鍒锋柊椤甸潰
+ * @param {number} time - 寤惰繜鏃堕棿锛岄粯璁や负0姣
  */
 const reload = (time: number = 0): void => {
   setTimeout(() => {
@@ -306,15 +264,15 @@ const reload = (time: number = 0): void => {
 };
 
 /**
- * 初始化语言设置
+ * 鍒濆鍖栬瑷€璁剧疆
  */
 const initLanguage = (): void => {
   locale.value = language.value;
 };
 
 /**
- * 切换系统语言
- * @param {LanguageEnum} lang - 目标语言类型
+ * 鍒囨崲绯荤粺璇█
+ * @param {LanguageEnum} lang - 鐩爣璇█绫诲瀷
  */
 const changeLanguage = (lang: LanguageEnum): void => {
   if (locale.value === lang) return;
@@ -324,55 +282,24 @@ const changeLanguage = (lang: LanguageEnum): void => {
 };
 
 /**
- * 打开设置面板
+ * 鎵撳紑璁剧疆闈㈡澘
  */
 const openSetting = (): void => {
   mittBus.emit("openSetting");
 
-  // 隐藏设置引导提示
+  // 闅愯棌璁剧疆寮曞鎻愮ず
   if (showSettingGuide.value) {
     settingStore.hideSettingGuide();
   }
 };
 
 /**
- * 打开全局搜索对话框
- */
+ * 鎵撳紑鍏ㄥ眬鎼滅储瀵硅瘽妗? */
 const openSearchDialog = (): void => {
   mittBus.emit("openSearchDialog");
 };
 
-/**
- * 点击页面其他区域关闭通知面板
- * @param {Event} e - 点击事件对象
- */
-const bodyCloseNotice = (e: any): void => {
-  if (!showNotice.value) return;
 
-  const target = e.target as HTMLElement;
-
-  // 检查是否点击了通知按钮或通知面板内部
-  const isNoticeButton = target.closest(".notice-button");
-  const isNoticePanel = target.closest(".fa-notification-panel");
-
-  if (!isNoticeButton && !isNoticePanel) {
-    showNotice.value = false;
-  }
-};
-
-/**
- * 切换通知面板显示状态
- */
-const visibleNotice = (): void => {
-  showNotice.value = !showNotice.value;
-};
-
-/**
- * 打开聊天窗口
- */
-const openChat = (): void => {
-  mittBus.emit("openChat");
-};
 </script>
 
 <style lang="scss" scoped>
@@ -493,18 +420,8 @@ const openChat = (): void => {
   animation: shrink 0.6s forwards;
 }
 
-.notice-button:hover :deep(.fa-svg-icon) {
-  animation: shake 0.5s ease-in-out;
-}
 
-.chat-button:hover :deep(.fa-svg-icon) {
-  animation: shake 0.5s ease-in-out;
-}
 
-/* Breathing animation for chat dot */
-.breathing-dot {
-  animation: breathing 1.5s ease-in-out infinite;
-}
 
 /* iPad breakpoint adjustments */
 @media screen and (width <= 768px) {

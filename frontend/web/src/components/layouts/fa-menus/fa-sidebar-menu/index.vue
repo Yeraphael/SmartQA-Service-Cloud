@@ -149,7 +149,7 @@ const router = useRouter();
 const settingStore = useSettingsStore();
 const configStore = useConfigStore();
 
-/** 租户配置：tenant_logo / tenant_name */
+/** 公司展示配置：底座兼容键 tenant_logo / tenant_name */
 const sidebarLogoSrc = computed(() => {
   const raw = configStore.configData.tenant_logo?.config_value;
   return typeof raw === "string" && raw.trim() ? raw.trim() : undefined;

@@ -1,4 +1,4 @@
-<!-- 用户菜单：合并旧版顶栏（配置中心、Gitee、引导）+ 新版 Popover 与链接结构 -->
+<!-- 用户菜单：账户资料、锁屏与退出 -->
 <template>
   <!-- inline-flex + items-center：与顶栏 FaIconButton 同一中线对齐，避免 Popover 触发层基线偏移 -->
   <div class="fa-user-menu inline-flex shrink-0 items-center leading-none">
@@ -58,31 +58,10 @@
           <ul class="py-4 mt-3 border-t border-g-300/80">
             <li
               class="flex items-center p-2 mb-3 select-none rounded-md cursor-pointer last:mb-0 hover:bg-(--fa-gray-200)"
-              @click="goPage('/fastlink/profile')"
+              @click="goPage('/account/profile')"
             >
               <FaSvgIcon icon="ri:user-3-line" class="mr-2 text-base" />
               <span class="text-sm">{{ $t("topBar.user.userCenter") }}</span>
-            </li>
-            <li
-              class="flex items-center p-2 mb-3 select-none rounded-md cursor-pointer last:mb-0 hover:bg-(--fa-gray-200)"
-              @click="openParamConfig"
-            >
-              <FaSvgIcon icon="ri:settings-3-line" class="mr-2 text-base" />
-              <span class="text-sm">{{ $t("topBar.user.paramConfig") }}</span>
-            </li>
-            <li
-              class="flex items-center p-2 mb-3 select-none rounded-md cursor-pointer last:mb-0 hover:bg-(--fa-gray-200)"
-              @click="toGithub()"
-            >
-              <FaSvgIcon icon="ri:github-line" class="mr-2 text-base" />
-              <span class="text-sm">{{ $t("topBar.user.github") }}</span>
-            </li>
-            <li
-              class="flex items-center p-2 mb-3 select-none rounded-md cursor-pointer last:mb-0 hover:bg-(--fa-gray-200)"
-              @click="toGitee"
-            >
-              <FaSvgIcon icon="ri:git-branch-line" class="mr-2 text-base" />
-              <span class="text-sm">{{ $t("topBar.user.gitee") }}</span>
             </li>
             <li
               class="flex items-center p-2 mb-3 select-none rounded-md cursor-pointer last:mb-0 hover:bg-(--fa-gray-200)"
@@ -102,8 +81,6 @@
         </div>
       </template>
     </ElPopover>
-
-    <FaConfigInfoDrawer v-model="paramDrawerVisible" />
   </div>
 </template>
 
@@ -112,7 +89,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { ElMessageBox } from "element-plus";
 import { useUserStore } from "@stores";
-import { WEB_LINKS, mittBus } from "@utils";
+import { mittBus } from "@utils";
 
 defineOptions({ name: "FaUserMenu" });
 
@@ -122,7 +99,6 @@ const userStore = useUserStore();
 
 const { info: userInfo } = storeToRefs(userStore);
 const userMenuPopover = ref();
-const paramDrawerVisible = ref(false);
 
 const userAvatar = computed(() => {
   const a = (userInfo.value as { avatar?: string })?.avatar?.trim();
@@ -138,21 +114,9 @@ const displayName = computed(
 
 const displayEmail = computed(() => (userInfo.value as { email?: string })?.email || "");
 
-function openParamConfig(): void {
-  closeUserMenu();
-  paramDrawerVisible.value = true;
-}
-
 function goPage(path: string): void {
+  closeUserMenu();
   router.push(path);
-}
-
-function toGithub(): void {
-  window.open(WEB_LINKS.GITHUB);
-}
-
-function toGitee(): void {
-  window.open(WEB_LINKS.GITEE);
 }
 
 function lockScreen(): void {

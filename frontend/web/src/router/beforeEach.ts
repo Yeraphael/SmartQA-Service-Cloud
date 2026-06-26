@@ -230,7 +230,7 @@ function resolveStaticChildFullPath(parentFullPath: string, segment: string): st
 function isStaticRoute(path: string): boolean {
   const checkRoute = (routes: any[], targetPath: string, parentFullPath = ""): boolean => {
     return routes.some((route) => {
-      // 通配 404（pathMatch）不应视为免登录静态页；静态表里可能与 `/404` 同名，按 path 区分。
+      // 通配 404（pathMatch）不应视为匿名公开页；静态表里可能与 `/404` 同名，按 path 区分。
       if (route.path === "/:pathMatch(.*)*") {
         return false;
       }

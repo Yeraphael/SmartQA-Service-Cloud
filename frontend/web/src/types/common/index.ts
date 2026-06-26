@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 通用类型定义模块
  *
  * 提供项目中常用的通用类型定义
@@ -24,7 +24,7 @@
  * - 减少重复类型定义
  *
  * @module types/common/index
- * @author FastapiAdmin Team
+ * @author SmartQA
  */
 
 // 状态类型

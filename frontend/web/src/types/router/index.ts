@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 路由类型定义模块
  *
  * 提供路由相关的类型定义
@@ -17,7 +17,7 @@
  * - 权限控制
  *
  * @module types/router/index
- * @author FastapiAdmin Team
+ * @author SmartQA
  */
 
 import { RouteRecordRaw } from "vue-router";

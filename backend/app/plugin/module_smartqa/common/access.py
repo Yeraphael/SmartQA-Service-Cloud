@@ -39,6 +39,13 @@ async def is_smartqa_boss(auth: AuthSchema) -> bool:
     return result.scalar_one_or_none() == "smartqa_boss"
 
 
+async def ensure_smartqa_boss(auth: AuthSchema) -> None:
+    """Raise 403 unless current user has SmartQA boss access."""
+
+    if not await is_smartqa_boss(auth):
+        raise CustomException(msg="仅老板端可操作该功能", code=10403, status_code=403)
+
+
 async def get_bound_staff_id(auth: AuthSchema) -> int | None:
     """Return staff id bound to current system user."""
 

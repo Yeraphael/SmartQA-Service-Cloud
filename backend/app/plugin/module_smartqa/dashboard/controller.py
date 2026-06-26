@@ -45,3 +45,23 @@ async def get_shop_distribution_controller(
 ) -> JSONResponse:
     result = await DashboardService(auth).shop_distribution()
     return SuccessResponse(data=result, msg="查询店铺分布成功")
+
+
+@DashboardRouter.get("/staff-performance", summary="客服表现统计", response_model=ResponseSchema[list[dict]])
+async def get_staff_performance_controller(
+    auth: Annotated[AuthSchema, Depends(AuthPermission())],
+    staff_id: int | None = Query(None, ge=1, description="客服ID"),
+    limit: int = Query(100, ge=1, le=200, description="返回数量"),
+) -> JSONResponse:
+    result = await DashboardService(auth).staff_performance(staff_id=staff_id, limit=limit)
+    return SuccessResponse(data=result, msg="查询客服表现成功")
+
+
+@DashboardRouter.get("/improvements", summary="改进建议汇总", response_model=ResponseSchema[dict])
+async def get_improvements_controller(
+    auth: Annotated[AuthSchema, Depends(AuthPermission())],
+    limit: int = Query(20, ge=1, le=100, description="返回数量"),
+    staff_id: int | None = Query(None, ge=1, description="客服ID"),
+) -> JSONResponse:
+    result = await DashboardService(auth).improvements(limit=limit, staff_id=staff_id)
+    return SuccessResponse(data=result, msg="查询改进建议成功")

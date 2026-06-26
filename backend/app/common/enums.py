@@ -126,33 +126,3 @@ class PermissionFilterStrategy(str, Enum):
     DEPT_RELATION = "dept_relation"  # 部门关联（用于 DeptModel、RoleModel，按所属部门过滤）
     OWN = "own"  # 仅本人数据
     USER_BINDING = "user_binding"  # 用户绑定角色（用于 RoleModel，仅显示当前用户绑定的角色）
-
-
-@unique
-class OrderTypeEnum(str, Enum):
-    """订单类型"""
-
-    NEW = "new"
-    BUY = "buy"
-    RENEW = "renew"
-    UPGRADE = "upgrade"
-    DOWNGRADE = "downgrade"
-    PLUGIN = "plugin"
-
-
-@unique
-class InvoiceTypeEnum(str, Enum):
-    """发票类型"""
-
-    VAT_NORMAL = "vat_normal"
-    VAT_SPECIAL = "vat_special"
-
-
-@unique
-class TicketTypeEnum(str, Enum):
-    """工单类型"""
-
-    SUGGESTION = "suggestion"
-    BUG = "bug"
-    OPTIMIZE = "optimize"
-    OTHER = "other"

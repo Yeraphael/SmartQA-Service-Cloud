@@ -10,9 +10,9 @@
             super().__init__(model=UserModel, auth=auth)
 
     # 无认证（后台任务）
-    class OrderCRUD(CRUDBase[OrderModel, Any, Any]):
+    class ExampleCRUD(CRUDBase[ExampleModel, Any, Any]):
         def __init__(self, session: AsyncSession) -> None:
-            super().__init__(model=OrderModel, session=session)
+            super().__init__(model=ExampleModel, session=session)
 """
 
 from collections.abc import Sequence

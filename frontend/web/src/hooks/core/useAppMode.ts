@@ -1,4 +1,4 @@
-/**
+﻿/**
  * useAppMode - 应用模式管理
  *
  * 提供应用访问模式的判断和管理功能，支持前端和后端两种权限控制模式。
@@ -13,7 +13,7 @@
  * 4. 响应式状态 - 提供响应式的模式判断，方便在组件中使用
  *
  * @module useAppMode
- * @author FastapiAdmin Team
+ * @author SmartQA
  */
 
 import { computed } from "vue";

@@ -126,11 +126,20 @@
   "setting": {
     "menuType": {
       "title": "菜单布局",
-      "list": ["垂直", "水平", "混合", "双列"]
+      "list": [
+        "垂直",
+        "水平",
+        "混合",
+        "双列"
+      ]
     },
     "theme": {
       "title": "主题风格",
-      "list": ["浅色", "深色", "系统"]
+      "list": [
+        "浅色",
+        "深色",
+        "系统"
+      ]
     },
     "menu": {
       "title": "菜单风格"
@@ -140,11 +149,17 @@
     },
     "box": {
       "title": "盒子样式",
-      "list": ["边框", "阴影"]
+      "list": [
+        "边框",
+        "阴影"
+      ]
     },
     "container": {
       "title": "容器宽度",
-      "list": ["铺满", "定宽"]
+      "list": [
+        "铺满",
+        "定宽"
+      ]
     },
     "basics": {
       "title": "基础配置",
@@ -159,14 +174,11 @@
         "menuSearch": "显示全局菜单搜索",
         "fullscreenTool": "显示全屏切换",
         "layoutSize": "显示组件尺寸切换",
-        "notificationTool": "显示通知入口",
         "progressBar": "显示顶部进度条",
         "weakMode": "色弱模式",
-        "watermark": "全局水印",
         "appLogo": "显示应用 Logo 与系统标题",
         "loginGuide": "登录后开启新手引导",
         "grayMode": "灰色模式",
-        "aiAssistant": "启用 AI 助手入口",
         "menuWidth": "菜单宽度",
         "tabStyle": "标签页风格",
         "pageTransition": "页面切换动画",
@@ -198,11 +210,20 @@
   "settings": {
     "menuType": {
       "title": "菜单布局",
-      "list": ["垂直", "水平", "混合", "双列"]
+      "list": [
+        "垂直",
+        "水平",
+        "混合",
+        "双列"
+      ]
     },
     "theme": {
       "title": "主题风格",
-      "list": ["浅色", "深色", "系统"]
+      "list": [
+        "浅色",
+        "深色",
+        "系统"
+      ]
     },
     "menu": {
       "title": "菜单风格"
@@ -212,11 +233,17 @@
     },
     "box": {
       "title": "盒子样式",
-      "list": ["边框", "阴影"]
+      "list": [
+        "边框",
+        "阴影"
+      ]
     },
     "container": {
       "title": "容器宽度",
-      "list": ["铺满", "定宽"]
+      "list": [
+        "铺满",
+        "定宽"
+      ]
     },
     "basics": {
       "title": "基础配置",
@@ -230,11 +257,9 @@
         "language": "显示多语言选择",
         "progressBar": "显示顶部进度条",
         "weakMode": "色弱模式",
-        "watermark": "全局水印",
         "appLogo": "显示应用 Logo 与系统标题",
         "loginGuide": "登录后开启新手引导",
         "grayMode": "灰色模式",
-        "aiAssistant": "启用 AI 助手入口",
         "menuWidth": "菜单宽度",
         "tabStyle": "标签页风格",
         "pageTransition": "页面切换动画",
@@ -272,16 +297,13 @@
     "sidebarColorScheme": "侧边栏配色",
     "showTagsView": "显示页签",
     "showAppLogo": "显示Logo",
-    "showWatermark": "显示水印",
     "grayMode": "灰色模式",
-    "userEnableAi": "AI 助手",
     "pageSwitchingAnimation": "切换动画",
     "showDesktopTools": "工具设置",
     "showMenuSearch": "显示菜单搜索",
     "showFullscreen": "显示全屏切换",
     "showSizeSelect": "显示布局大小",
     "showLangSelect": "显示语言选择",
-    "showNotification": "显示通知",
     "classicBlue": "经典蓝",
     "minimalWhite": "极简白",
     "leftLayout": "左侧模式",
@@ -309,8 +331,14 @@
   "notice": {
     "title": "通知",
     "btnRead": "标为已读",
-    "bar": ["通知", "消息", "待办"],
-    "text": ["暂无"],
+    "bar": [
+      "通知",
+      "消息",
+      "待办"
+    ],
+    "text": [
+      "暂无"
+    ],
     "viewAll": "查看全部"
   },
   "worktab": {
@@ -344,24 +372,8 @@
     "subTitle": "请输入您的账户信息以开始管理您的项目",
     "versionLabel": "版本",
     "quickSelectAccount": "快速选择账号",
-    "mobileLogin": "手机号登录",
-    "mobileLoginSubTitle": "请输入您的手机号码以开始管理您的项目",
-    "mobilePhonePlaceholder": "手机号码",
-    "getSmsCode": "获取验证码",
-    "smsCodeSentMock": "验证码已发送（演示环境）",
-    "smsCodeRequired": "请输入 6 位短信验证码",
-    "mobileLoginPending": "手机号登录接口暂未接入，仅供界面演示",
     "backToAccountLogin": "返回",
-    "qrLogin": "扫码登录",
-    "qrLoginTitle": "欢迎回来 📱",
-    "qrLoginSubTitle": "请用手机扫描二维码登录",
-    "qrLoginHint": "扫码后点击「确认」，即可完成登录",
-    "oauthNoticeTitle": "通知",
-    "oauthLoginSuccess": "第三方账号登录成功",
-    "oauthLoginFailed": "第三方登录失败，请尝试账号密码登录",
-    "comingSoon": "功能开发中，敬请期待",
     "accountLoginTab": "账号登录",
-    "quickLoginTab": "快速登录",
     "roles": {
       "super": "超级管理员",
       "admin": "管理员",
@@ -378,8 +390,6 @@
     "forgetPwd": "忘记密码",
     "btnText": "登录",
     "backLoginBtnText": "去登录",
-    "noAccount": "还没有账号？",
-    "register": "注册",
     "success": {
       "title": "登录成功",
       "message": "欢迎回来"
@@ -406,43 +416,10 @@
       },
       "captchaCode": {
         "required": "请输入验证码"
-      },
-      "mobile": {
-        "required": "请输入手机号",
-        "invalid": "手机号格式不正确",
-        "exist": "手机号已存在"
-      },
-      "email": {
-        "required": "请输入邮箱",
-        "invalid": "邮箱格式不正确",
-        "exist": "邮箱已存在"
-      },
-      "name": {
-        "required": "请输入名称",
-        "invalid": "名称格式不正确",
-        "min": "名称不能少于2位"
-      },
-      "agree": {
-        "required": "请先勾选同意用户协议"
       }
     },
-    "oauthTooltip": {
-      "wechat": "微信",
-      "qq": "QQ",
-      "github": "GitHub",
-      "gitee": "Gitee"
-    },
-    "otherLoginMethods": "其他登录方式",
     "resetPassword": "重置密码",
     "thinkOfPasswd": "想起密码？",
-    "agree": "我已同意并阅读",
-    "userAgreement": "用户协议",
-    "haveAccount": "已有账号？",
-    "noAccountText": "您没有账号？",
-    "quickFill": "快速填写",
-    "quickLoginTip": "点击用户头像快速登录",
-    "selectUser": "请选择用户",
-    "reg": "注 册",
     "panelAlign": {
       "label": "分栏布局",
       "left": "居左",
@@ -459,28 +436,6 @@
     "placeholder": "请输入您的电子邮件",
     "submitBtnText": "提交",
     "backBtnText": "返回"
-  },
-  "register": {
-    "title": "创建账号",
-    "subTitle": "欢迎加入我们，请填写以下信息完成注册",
-    "placeholder": {
-      "username": "请输入账号",
-      "password": "请输入密码",
-      "confirmPassword": "请再次输入密码",
-      "email": "请输入邮箱"
-    },
-    "rule": {
-      "confirmPasswordRequired": "请再次输入密码",
-      "passwordMismatch": "两次输入密码不一致!",
-      "usernameLength": "长度在 3 到 20 个字符",
-      "passwordLength": "密码长度不能小于6位",
-      "agreementRequired": "请同意隐私协议"
-    },
-    "agreeText": "我同意",
-    "privacyPolicy": "《隐私政策》",
-    "submitBtnText": "注册",
-    "hasAccount": "已有账号？",
-    "toLogin": "去登录"
   },
   "lock": {
     "unlock": "点击解锁",
@@ -546,9 +501,6 @@
     },
     "workplace": {
       "title": "工作台"
-    },
-    "fachat": {
-      "title": "聊天"
     },
     "changelog": {
       "title": "更新日志"

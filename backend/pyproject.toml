@@ -1,13 +1,11 @@
 [project]
-name = "backend"
-version = "2.0.0"
-description = "fastapiadmin后端工程"
+name = "smartqa-service-cloud-backend"
+version = "1.0.0"
+description = "SmartQA Service Cloud 后端"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "agno==2.5.8",
     "aiofiles==24.1.0",                         # 文件操作
-    "aiosmtplib>=3.0.2",                        # 异步 SMTP 邮件发送（fastapi-mail 要求 >=3.0.2）
     "aiosqlite==0.22.1",                        # sqlite 异步操作数据库
     "alembic==1.18.4",                          # 数据库迁移
     "apscheduler==3.11.0",                      # 定时任务
@@ -21,7 +19,6 @@ dependencies = [
     "fastapi-limiter==0.1.6",                   # 接口限流
     "greenlet==3.5.2",                          # 协程核心依赖（SQLAlchemy 异步）
     "httpx==0.28.1",                            # HTTP 客户端
-    "jinja2==3.1.6",                            # 模板引擎
     "loguru==0.7.3",                            # 日志
     "openai==2.28.0",                           # OpenAI API 客户端
     "openpyxl==3.1.5",                          # Excel
@@ -29,7 +26,7 @@ dependencies = [
     "pillow==12.2.0",                           # 图片处理
     "psutil==7.2.2",                            # 系统信息
     "psycopg[binary]==3.3.2",                   # postgresql 同步驱动（含预编译 libpq，开箱即用）
-    "pydantic-settings>=2.6.1",                 # 配置设置（fastapi-mail 要求 >=2.6.1）
+    "pydantic-settings>=2.6.1",                 # 配置设置
     "pyjwt==2.13.0",                            # OAuth2
     "pymysql==1.2.0",                           # mysql 同步步操作数据库基于 pymysql：aiomysql 是 pymysql 的异步版本，pymysql 是一个纯 Python 实现的 MySQL 客户端。成熟度：aiomysql 相对较为成熟，社区支持较好，文档也比较完善。
     "python-multipart==0.0.32",                 # request.form() 对表单进行「解析」时安装
@@ -41,9 +38,6 @@ dependencies = [
     "ua-parser==1.0.2",                         # 解析 User-Agent 获取 OS/浏览器
     "uvicorn==0.49.0",                          # uvicorn web 框架
     "websockets>=16.0,<17.0",                   # websocket 通信
-    "fastapi-mail==1.5.1",                # 邮件发送（简化 EmailSendService 底层）
-    "tinycss2==1.5.1",
-    "weasyprint==69.0",
     "fastapi-cache2[redis]>=0.1.8",
 ]
 

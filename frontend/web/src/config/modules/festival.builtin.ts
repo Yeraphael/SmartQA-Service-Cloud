@@ -283,7 +283,7 @@ const BUILTIN_SOLAR_RULES: SolarRule[] = [
     day: 11,
     image: hb,
     count: 4,
-    scrollText: "🛒 双十一购物愉快～理性消费，库存与订单接口要顶住峰值哦。",
+    scrollText: "双十一服务高峰，重点关注客服响应和质检风险。",
   },
   {
     name: "国家宪法日",

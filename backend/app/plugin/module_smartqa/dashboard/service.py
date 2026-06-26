@@ -3,7 +3,7 @@ from sqlalchemy import case, desc, func, select
 from app.core.base_schema import AuthSchema
 from app.plugin.module_smartqa.common.access import build_staff_scope_condition
 from app.plugin.module_smartqa.models.conversation import DwdQnConversationModel
-from app.plugin.module_smartqa.models.dimension import DimShopModel, DimStaffModel
+from app.plugin.module_smartqa.models.dimension import DimCustomerModel, DimProductModel, DimShopModel, DimStaffModel
 from app.plugin.module_smartqa.models.qc import QcIssueModel, QcResultModel
 
 
@@ -138,3 +138,159 @@ class DashboardService:
             stmt = stmt.where(scope_condition)
         rows = (await self.auth.db.execute(stmt)).mappings().all()
         return [dict(row) for row in rows]
+
+    async def staff_performance(self, staff_id: int | None = None, limit: int = 100) -> list[dict]:
+        scope_condition = await build_staff_scope_condition(self.auth)
+        stmt = (
+            select(
+                DimStaffModel.id.label("staff_id"),
+                DimStaffModel.staff_name,
+                DimStaffModel.primary_account,
+                func.count(func.distinct(DwdQnConversationModel.id)).label("conversation_count"),
+                func.count(func.distinct(QcResultModel.id)).label("qc_count"),
+                func.avg(QcResultModel.score).label("avg_score"),
+                func.count(func.distinct(QcIssueModel.id)).label("issue_count"),
+                func.sum(case((QcResultModel.result_level == "fail", 1), else_=0)).label("fail_count"),
+                func.sum(case((QcResultModel.risk_level.in_(["high", "critical"]), 1), else_=0)).label("high_risk_count"),
+            )
+            .select_from(DimStaffModel)
+            .outerjoin(DwdQnConversationModel, DwdQnConversationModel.staff_id == DimStaffModel.id)
+            .outerjoin(QcResultModel, QcResultModel.conversation_id == DwdQnConversationModel.id)
+            .outerjoin(QcIssueModel, QcIssueModel.result_id == QcResultModel.id)
+            .where(
+                DimStaffModel.is_deleted == False,  # noqa: E712
+                (DwdQnConversationModel.id.is_(None)) | (DwdQnConversationModel.is_deleted == False),  # noqa: E712
+                (QcResultModel.id.is_(None)) | (QcResultModel.is_deleted == False),  # noqa: E712
+                (QcIssueModel.id.is_(None)) | (QcIssueModel.is_deleted == False),  # noqa: E712
+            )
+            .group_by(DimStaffModel.id, DimStaffModel.staff_name, DimStaffModel.primary_account)
+            .order_by(desc("avg_score"), desc("qc_count"), desc("issue_count"))
+            .limit(max(min(limit, 200), 1))
+        )
+        if staff_id:
+            stmt = stmt.where(DimStaffModel.id == staff_id)
+        if scope_condition is not None:
+            stmt = stmt.where(scope_condition)
+        rows = (await self.auth.db.execute(stmt)).mappings().all()
+        return [
+            {
+                **dict(row),
+                "avg_score": round(float(row.get("avg_score") or 0), 2),
+                "issue_count": row.get("issue_count") or 0,
+                "fail_count": row.get("fail_count") or 0,
+                "high_risk_count": row.get("high_risk_count") or 0,
+            }
+            for row in rows
+        ]
+
+    async def improvements(self, limit: int = 20, staff_id: int | None = None) -> dict:
+        scope_condition = await build_staff_scope_condition(self.auth)
+        limit = max(min(limit, 100), 1)
+
+        summary_stmt = (
+            select(
+                QcIssueModel.rule_code,
+                QcIssueModel.severity,
+                func.count(QcIssueModel.id).label("issue_count"),
+            )
+            .select_from(QcIssueModel)
+            .join(QcResultModel, QcIssueModel.result_id == QcResultModel.id)
+            .join(DwdQnConversationModel, QcResultModel.conversation_id == DwdQnConversationModel.id)
+            .where(
+                QcIssueModel.is_deleted == False,  # noqa: E712
+                QcResultModel.is_deleted == False,  # noqa: E712
+                DwdQnConversationModel.is_deleted == False,  # noqa: E712
+            )
+            .group_by(QcIssueModel.rule_code, QcIssueModel.severity)
+            .order_by(desc("issue_count"))
+        )
+        frequent_stmt = (
+            select(
+                QcIssueModel.rule_code,
+                QcIssueModel.severity,
+                QcIssueModel.title,
+                QcIssueModel.reason,
+                QcIssueModel.suggested_action,
+                func.count(QcIssueModel.id).label("issue_count"),
+            )
+            .select_from(QcIssueModel)
+            .join(QcResultModel, QcIssueModel.result_id == QcResultModel.id)
+            .join(DwdQnConversationModel, QcResultModel.conversation_id == DwdQnConversationModel.id)
+            .where(
+                QcIssueModel.is_deleted == False,  # noqa: E712
+                QcResultModel.is_deleted == False,  # noqa: E712
+                DwdQnConversationModel.is_deleted == False,  # noqa: E712
+            )
+            .group_by(
+                QcIssueModel.rule_code,
+                QcIssueModel.severity,
+                QcIssueModel.title,
+                QcIssueModel.reason,
+                QcIssueModel.suggested_action,
+            )
+            .order_by(desc("issue_count"))
+            .limit(limit)
+        )
+        replies_stmt = (
+            select(
+                QcIssueModel.rule_code,
+                QcIssueModel.title,
+                QcIssueModel.suggested_reply,
+                func.count(QcIssueModel.id).label("issue_count"),
+            )
+            .select_from(QcIssueModel)
+            .join(QcResultModel, QcIssueModel.result_id == QcResultModel.id)
+            .join(DwdQnConversationModel, QcResultModel.conversation_id == DwdQnConversationModel.id)
+            .where(
+                QcIssueModel.is_deleted == False,  # noqa: E712
+                QcResultModel.is_deleted == False,  # noqa: E712
+                DwdQnConversationModel.is_deleted == False,  # noqa: E712
+                QcIssueModel.suggested_reply.is_not(None),
+                QcIssueModel.suggested_reply != "",
+            )
+            .group_by(QcIssueModel.rule_code, QcIssueModel.title, QcIssueModel.suggested_reply)
+            .order_by(desc("issue_count"))
+            .limit(limit)
+        )
+        risk_stmt = (
+            select(
+                QcResultModel.id.label("result_id"),
+                QcResultModel.score,
+                QcResultModel.risk_level,
+                QcResultModel.summary,
+                DwdQnConversationModel.id.label("conversation_pk"),
+                DwdQnConversationModel.conversation_id,
+                DwdQnConversationModel.start_time,
+                DimProductModel.product_name,
+                DimCustomerModel.primary_taobao_account.label("customer_account"),
+            )
+            .select_from(QcResultModel)
+            .join(DwdQnConversationModel, QcResultModel.conversation_id == DwdQnConversationModel.id)
+            .outerjoin(DimProductModel, DwdQnConversationModel.product_id == DimProductModel.id)
+            .outerjoin(DimCustomerModel, DwdQnConversationModel.customer_id == DimCustomerModel.id)
+            .where(
+                QcResultModel.is_deleted == False,  # noqa: E712
+                DwdQnConversationModel.is_deleted == False,  # noqa: E712
+                QcResultModel.risk_level.in_(["high", "critical"]),
+            )
+            .order_by(desc(QcResultModel.created_time), desc(QcResultModel.id))
+            .limit(limit)
+        )
+
+        if scope_condition is not None:
+            summary_stmt = summary_stmt.where(scope_condition)
+            frequent_stmt = frequent_stmt.where(scope_condition)
+            replies_stmt = replies_stmt.where(scope_condition)
+            risk_stmt = risk_stmt.where(scope_condition)
+        if staff_id:
+            summary_stmt = summary_stmt.where(DwdQnConversationModel.staff_id == staff_id)
+            frequent_stmt = frequent_stmt.where(DwdQnConversationModel.staff_id == staff_id)
+            replies_stmt = replies_stmt.where(DwdQnConversationModel.staff_id == staff_id)
+            risk_stmt = risk_stmt.where(DwdQnConversationModel.staff_id == staff_id)
+
+        return {
+            "issue_summary": [dict(row) for row in (await self.auth.db.execute(summary_stmt)).mappings().all()],
+            "frequent_issues": [dict(row) for row in (await self.auth.db.execute(frequent_stmt)).mappings().all()],
+            "suggested_replies": [dict(row) for row in (await self.auth.db.execute(replies_stmt)).mappings().all()],
+            "recent_high_risk": [dict(row) for row in (await self.auth.db.execute(risk_stmt)).mappings().all()],
+        }

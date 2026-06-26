@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 菜单状态管理模块
  *
  * 提供菜单数据和动态路由的状态管理
@@ -26,7 +26,7 @@
  * 4. 登出时调用移除函数清理路由
  *
  * @module store/modules/menu.store
- * @author FastapiAdmin Team
+ * @author SmartQA
  */
 import { defineStore } from "pinia";
 import { ref } from "vue";

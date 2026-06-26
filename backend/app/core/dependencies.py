@@ -1,5 +1,4 @@
 import json
-import time
 from collections.abc import AsyncGenerator
 from dataclasses import replace
 from functools import wraps
@@ -19,11 +18,7 @@ from app.core.logger import logger
 from app.core.redis_crud import RedisCURD
 from app.core.request_context import RequestContext
 from app.core.request_context import get_current_tenant_id as _get_ctx_tenant_id
-from app.core.security import OAuth2Schema, decode_access_token
-
-# 套餐菜单权限缓存: {tenant_id: (timestamp, [menu_ids])}
-_package_menu_cache: dict[int, tuple[float, list[int]]] = {}
-
+from app.core.security import TokenAuthSchema, decode_access_token
 
 async def db_getter() -> AsyncGenerator[AsyncSession, None]:
     """数据库会话 — 请求级生命周期管理。
@@ -179,7 +174,7 @@ async def get_current_user(
     request: Request,
     db: AsyncSession = Depends(db_getter),
     redis: Redis = Depends(redis_getter),
-    token: str = Depends(OAuth2Schema),
+    token: str = Depends(TokenAuthSchema),
 ) -> AuthSchema:
     """获取当前用户
 
@@ -282,29 +277,6 @@ async def _authenticate(
     auth.user = user
     return auth
 
-async def _get_cached_tenant_menu_ids(auth: AuthSchema, tenant_id: int) -> list[int]:
-    """获取租户可用菜单 ID，带 60s 进程级缓存
-
-    套餐菜单变更频率极低，缓存可大幅减少 AuthPermission 的 DB 查询次数。
-
-    参数:
-        auth: 认证信息
-        tenant_id: 租户 ID
-
-    返回:
-        可用菜单 ID 列表
-    """
-    cached = _package_menu_cache.get(tenant_id)
-    if cached and time.time() - cached[0] < 60:
-        return cached[1]
-
-    from app.api.v1.module_platform.package.service import PackageService
-
-    result = await PackageService.get_tenant_available_menu_ids(auth, tenant_id)
-    _package_menu_cache[tenant_id] = (time.time(), result)
-    return result
-
-
 class AuthPermission:
     """权限验证类"""
 
@@ -352,7 +324,7 @@ class AuthPermission:
         if not auth.user or not auth.user.roles:
             raise CustomException(msg="无权限操作", code=10403, status_code=403)
 
-        # 收集角色权限（附带 menu_id 用于套餐过滤）
+        # 收集角色权限
         role_perms: dict[str, int] = {}
         for role in auth.user.roles:
             if role.status != 0:
@@ -364,12 +336,7 @@ class AuthPermission:
         if not role_perms:
             raise CustomException(msg="无权限操作", code=10403, status_code=403)
 
-        # 租户用户：权限必须受套餐菜单约束（带 60s 进程级缓存）
-        if auth.tenant_id:
-            allowed_ids = set(await _get_cached_tenant_menu_ids(auth, auth.tenant_id))
-            user_permissions = {p for p, mid in role_perms.items() if mid in allowed_ids}
-        else:
-            user_permissions = set(role_perms.keys())
+        user_permissions = set(role_perms.keys())
 
         # 权限验证 - 满足任一权限即可
         if not any(perm in user_permissions for perm in self.permissions):

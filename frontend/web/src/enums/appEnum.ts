@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 系统级别枚举定义模块
  *
  * ## 主要功能
@@ -11,7 +11,7 @@
  * - 菜单宽度枚举（收起宽度）
  *
  * @module enums/appEnum
- * @author FastapiAdmin Team
+ * @author SmartQA
  */
 
 /**

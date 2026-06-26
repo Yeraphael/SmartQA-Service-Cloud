@@ -24,12 +24,24 @@
             <ElTag v-else type="info">未绑定</ElTag>
           </template>
         </ElTableColumn>
+        <ElTableColumn label="操作" width="240" fixed="right">
+          <template #default="{ row }">
+            <ElButton v-if="!row.sys_user_id" link type="primary" @click="ensureUser(row)">创建账号</ElButton>
+            <template v-else>
+              <ElButton link type="primary" @click="resetPassword(row)">重置密码</ElButton>
+              <ElButton link :type="row.user_status === 0 ? 'warning' : 'success'" @click="toggleStatus(row)">
+                {{ row.user_status === 0 ? "停用" : "启用" }}
+              </ElButton>
+            </template>
+          </template>
+        </ElTableColumn>
       </ElTable>
     </ElCard>
   </div>
 </template>
 
 <script setup lang="ts">
+import { ElMessage, ElMessageBox } from "element-plus";
 import { onMounted, ref } from "vue";
 import SmartQAAPI, { type StaffUser } from "@/api/module_smartqa";
 
@@ -56,6 +68,24 @@ async function seedUsers() {
   } finally {
     seeding.value = false;
   }
+}
+
+async function ensureUser(row: StaffUser) {
+  await SmartQAAPI.ensureStaffUser(row.staff_id);
+  ElMessage.success("账号已创建");
+  await loadData();
+}
+
+async function resetPassword(row: StaffUser) {
+  await ElMessageBox.confirm(`确认重置 ${row.staff_name} 的登录密码？`, "重置确认", { type: "warning" });
+  await SmartQAAPI.resetStaffPassword(row.staff_id);
+  ElMessage.success("密码已重置");
+}
+
+async function toggleStatus(row: StaffUser) {
+  const nextStatus = row.user_status === 0 ? 1 : 0;
+  await SmartQAAPI.setStaffUserStatus(row.staff_id, nextStatus);
+  await loadData();
 }
 
 onMounted(loadData);

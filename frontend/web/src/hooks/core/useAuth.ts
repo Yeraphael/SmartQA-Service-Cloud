@@ -1,4 +1,4 @@
-/**
+﻿/**
  * useAuth - 权限验证管理
  *
  * 提供统一的权限验证功能，支持前端和后端两种权限模式。
@@ -27,7 +27,7 @@
  * ```
  *
  * @module useAuth
- * @author FastapiAdmin Team
+ * @author SmartQA
  */
 
 import { useRoute } from "vue-router";

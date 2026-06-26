@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 组件类型定义模块
  *
  * 提供项目组件的类型定义
@@ -18,7 +18,7 @@
  * - 组件事件参数类型
  *
  * @module types/component/index
- * @author FastapiAdmin Team
+ * @author SmartQA
  */
 
 // 搜索组件类型

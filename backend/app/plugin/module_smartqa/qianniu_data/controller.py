@@ -8,6 +8,7 @@ from app.core.base_params import PaginationQueryParam
 from app.core.base_schema import AuthSchema
 from app.core.dependencies import AuthPermission
 from app.core.router_class import OperationLogRoute
+from app.plugin.module_smartqa.common.access import ensure_smartqa_boss
 
 from .schema import ImportBatchQueryParam
 from .service import QianniuDataService
@@ -22,6 +23,7 @@ async def get_import_batch_list_controller(
     search: Annotated[ImportBatchQueryParam, Depends()],
     auth: Annotated[AuthSchema, Depends(AuthPermission())],
 ) -> JSONResponse:
+    await ensure_smartqa_boss(auth)
     result = await QianniuDataService(auth).batch_page(page_no=page.page_no, page_size=page.page_size, search=search)
     return SuccessResponse(data=result, msg="查询千牛同步批次成功")
 
@@ -30,6 +32,6 @@ async def get_import_batch_list_controller(
 async def get_qianniu_summary_controller(
     auth: Annotated[AuthSchema, Depends(AuthPermission())],
 ) -> JSONResponse:
+    await ensure_smartqa_boss(auth)
     result = await QianniuDataService(auth).latest_summary()
     return SuccessResponse(data=result, msg="查询千牛数据源摘要成功")
-

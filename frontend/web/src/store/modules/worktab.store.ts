@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 工作标签页状态管理模块
  *
  * 提供多标签页功能的完整状态管理
@@ -35,7 +35,7 @@
  * - 刷新页面保持标签状态
  *
  * @module store/modules/worktab.store
- * @author FastapiAdmin Team
+ * @author SmartQA
  */
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";

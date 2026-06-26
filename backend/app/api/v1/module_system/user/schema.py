@@ -34,6 +34,16 @@ class CurrentUserUpdateSchema(BaseModel):
         """校验手机号格式"""
         return mobile_validator(value)
 
+    @field_validator("email", mode="before")
+    @classmethod
+    def normalize_empty_email(cls, value: str | None):
+        """空邮箱按未填写处理，兼容历史账号数据。"""
+        if value == "":
+            return None
+        if isinstance(value, str) and value.endswith("@smartqa.local"):
+            return None
+        return value
+
     @field_validator("email")
     @classmethod
     def validate_email(cls, value: str | None):
@@ -285,10 +295,6 @@ class UserOutSchema(UserUpdateSchema, BaseSchema, UserBySchema, TenantBySchema):
         exclude=True,
         description="创建入参使用；列表/详情出参见 tenant",
     )
-    gitee_login: str | None = Field(default=None, max_length=32, description="Gitee登录")
-    github_login: str | None = Field(default=None, max_length=32, description="Github登录")
-    wx_login: str | None = Field(default=None, max_length=32, description="微信登录")
-    qq_login: str | None = Field(default=None, max_length=32, description="QQ登录")
     dept_name: str | None = Field(default=None, description="部门名称")
     dept: CommonSchema | None = Field(default=None, description="部门")
     positions: list[CommonSchema] | None = Field(default=[], description="岗位")

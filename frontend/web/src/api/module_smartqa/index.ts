@@ -34,6 +34,20 @@ const SmartQAAPI = {
       method: "get",
     });
   },
+  staffPerformance(params?: { staff_id?: number; limit?: number }) {
+    return request<ApiResponse<StaffPerformance[]>>({
+      url: `${API_PATH}/dashboard/staff-performance`,
+      method: "get",
+      params,
+    });
+  },
+  improvements(limit = 20, staffId?: number) {
+    return request<ApiResponse<ImprovementSummary>>({
+      url: `${API_PATH}/dashboard/improvements`,
+      method: "get",
+      params: { limit, staff_id: staffId },
+    });
+  },
   batchSummary() {
     return request<ApiResponse<QianniuSummary>>({
       url: `${API_PATH}/qianniu/summary`,
@@ -115,6 +129,89 @@ const SmartQAAPI = {
       data: { force },
     });
   },
+  ensureStaffUser(staffId: number, password = "SmartQA@123456") {
+    return request<ApiResponse<Record<string, unknown>>>({
+      url: `${API_PATH}/staff-users/${staffId}/ensure`,
+      method: "post",
+      data: { password },
+    });
+  },
+  resetStaffPassword(staffId: number, password = "SmartQA@123456") {
+    return request<ApiResponse<Record<string, unknown>>>({
+      url: `${API_PATH}/staff-users/${staffId}/password`,
+      method: "put",
+      data: { password },
+    });
+  },
+  setStaffUserStatus(staffId: number, status: 0 | 1) {
+    return request<ApiResponse<Record<string, unknown>>>({
+      url: `${API_PATH}/staff-users/${staffId}/status`,
+      method: "patch",
+      data: { status },
+    });
+  },
+  rules(params?: { category?: string; status?: string }) {
+    return request<ApiResponse<QcRule[]>>({
+      url: `${API_PATH}/qc/rules`,
+      method: "get",
+      params,
+    });
+  },
+  createRule(data: QcRuleForm) {
+    return request<ApiResponse<QcRule>>({
+      url: `${API_PATH}/qc/rules`,
+      method: "post",
+      data,
+    });
+  },
+  updateRule(id: number, data: Partial<QcRuleForm>) {
+    return request<ApiResponse<QcRule>>({
+      url: `${API_PATH}/qc/rules/${id}`,
+      method: "put",
+      data,
+    });
+  },
+  deleteRule(id: number) {
+    return request<ApiResponse<Record<string, unknown>>>({
+      url: `${API_PATH}/qc/rules/${id}`,
+      method: "delete",
+    });
+  },
+  promptTemplates(params?: { status?: string }) {
+    return request<ApiResponse<QcPromptTemplate[]>>({
+      url: `${API_PATH}/qc/rules/prompt-templates`,
+      method: "get",
+      params,
+    });
+  },
+  createPromptTemplate(data: QcPromptTemplateForm) {
+    return request<ApiResponse<QcPromptTemplate>>({
+      url: `${API_PATH}/qc/rules/prompt-templates`,
+      method: "post",
+      data,
+    });
+  },
+  updatePromptTemplate(id: number, data: Partial<QcPromptTemplateForm>) {
+    return request<ApiResponse<QcPromptTemplate>>({
+      url: `${API_PATH}/qc/rules/prompt-templates/${id}`,
+      method: "put",
+      data,
+    });
+  },
+  ruleVersions(params?: { status?: string }) {
+    return request<ApiResponse<QcRuleVersion[]>>({
+      url: `${API_PATH}/qc/rules/versions`,
+      method: "get",
+      params,
+    });
+  },
+  publishRuleVersion(data: { rule_version: string; prompt_version: string; rule_codes: string[] }) {
+    return request<ApiResponse<QcRuleVersion>>({
+      url: `${API_PATH}/qc/rules/versions/publish`,
+      method: "post",
+      data,
+    });
+  },
 };
 
 export default SmartQAAPI;
@@ -142,7 +239,16 @@ export interface StaffRanking {
   primary_account: string;
   qc_count: number;
   avg_score: number;
+  issue_count?: number;
+  conversation_count?: number;
+  fail_count?: number;
   high_risk_count: number;
+}
+
+export interface StaffPerformance extends StaffRanking {
+  conversation_count: number;
+  issue_count: number;
+  fail_count: number;
 }
 
 export interface ShopDistribution {
@@ -155,6 +261,41 @@ export interface IssueDistribution {
   rule_code: string;
   severity: string;
   issue_count: number;
+}
+
+export interface ImprovementSummary {
+  issue_summary: IssueDistribution[];
+  frequent_issues: ImprovementIssue[];
+  suggested_replies: SuggestedReply[];
+  recent_high_risk: RecentHighRisk[];
+}
+
+export interface ImprovementIssue {
+  rule_code: string;
+  severity: string;
+  title: string;
+  reason?: string;
+  suggested_action?: string;
+  issue_count: number;
+}
+
+export interface SuggestedReply {
+  rule_code: string;
+  title: string;
+  suggested_reply: string;
+  issue_count: number;
+}
+
+export interface RecentHighRisk {
+  result_id: number;
+  score: number;
+  risk_level: string;
+  summary?: string;
+  conversation_pk: number;
+  conversation_id: string;
+  start_time?: string;
+  product_name?: string;
+  customer_account?: string;
 }
 
 export interface QianniuSummary {
@@ -328,4 +469,58 @@ export interface StaffUser {
   username?: string;
   nickname?: string;
   user_status?: number;
+}
+
+export interface QcRule {
+  id: number;
+  rule_code: string;
+  rule_name: string;
+  category: string;
+  judgment_standard: string;
+  deduction_score: number;
+  severity: string;
+  status: string;
+  created_time: string;
+  updated_time: string;
+}
+
+export interface QcRuleForm {
+  rule_code: string;
+  rule_name: string;
+  category: string;
+  judgment_standard: string;
+  deduction_score: number;
+  severity: string;
+  status: string;
+}
+
+export interface QcPromptTemplate {
+  id: number;
+  prompt_version: string;
+  name: string;
+  template_content: string;
+  output_schema_version: string;
+  status: string;
+  created_time: string;
+  updated_time: string;
+}
+
+export interface QcPromptTemplateForm {
+  prompt_version: string;
+  name: string;
+  template_content: string;
+  output_schema_version: string;
+  status: string;
+}
+
+export interface QcRuleVersion {
+  id: number;
+  rule_version: string;
+  prompt_version: string;
+  rule_codes?: string[];
+  rule_snapshot?: Record<string, unknown>;
+  status: string;
+  published_at?: string;
+  created_time: string;
+  updated_time: string;
 }

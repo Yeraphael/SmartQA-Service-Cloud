@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 国际化配置
  *
  * 基于 vue-i18n 实现的多语言国际化解决方案。
@@ -18,7 +18,7 @@
  * - en: English
  *
  * @module locales
- * @author FastapiAdmin Team
+ * @author SmartQA
  */
 
 import { createI18n } from "vue-i18n";

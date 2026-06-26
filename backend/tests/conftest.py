@@ -195,8 +195,8 @@ async def _test_lifespan(app) -> AsyncGenerator[Any, None]:
     async with async_db_session() as db:
         await db.execute(
             update(UserModel)
-            .where(UserModel.username == "admin")
-            .values(password=PwdUtil.hash_password("admin123"))
+            .where(UserModel.username == "boss")
+            .values(password=PwdUtil.hash_password("SmartQA@123456"))
         )
         await db.commit()
 
@@ -231,9 +231,9 @@ def auth_headers(_api_client: TestClient) -> dict[str, str]:
     """session 级 admin 认证头，登录一次，所有测试复用。"""
     resp = _api_client.post(
         "/system/auth/login",
-        data={"username": "admin", "password": "admin123"},
+        data={"username": "boss", "password": "SmartQA@123456", "login_type": "PC端"},
     )
-    assert resp.status_code == 200, f"admin 登录失败: {resp.text}"
+    assert resp.status_code == 200, f"boss 登录失败: {resp.text}"
     token = resp.json()["data"]["access_token"]
     return {"Authorization": f"Bearer {token}"}
 

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 节日庆祝配置
  *
  * 配置系统的节日烟花效果和祝福文本。
@@ -15,7 +15,7 @@
  * - count: 烟花播放次数（可选，默认为 3 次）
  * - fireworkInterval: 两次发射间隔毫秒（可选，默认 1000；调小更密集，如雪花连续感）
  * - skipFireworks: 为 true 时不放烟花，仅显示 scrollText（适合长期顶栏公告）
- * - scrollText 可使用占位符 {{version}}、{{introduceUrl}}（构建时替换为版本号与演示链接）
+ * - scrollText 可使用占位符 {{version}}、{{introduceUrl}}（构建时替换为版本号与项目说明链接）
  *
  * ## 礼花图与快捷键补充
  *
@@ -43,7 +43,7 @@
  * - 每个用户每个自然日「自动礼花」流程只会完整播放一次（由 setting store 按自然日记录）。
  *
  * @module config/modules/festival
- * @author FastapiAdmin Team
+ * @author SmartQA
  */
 
 import { FestivalConfig } from "@/types/config";
@@ -61,14 +61,11 @@ export const festivalConfigList: FestivalConfig[] = [
     isResidentBanner: true,
     count: 3,
     scrollText:
-      '🎉 {{version}}版本正式上线！能力全面提升，配套完整交付方案，助力高效开发与商业落地。 <a href="{{introduceUrl}}" target="_blank" rel="noopener noreferrer">👉 立即体验演示</a>',
+      '🎉 {{version}}版本正式上线！千牛数据同步、AI质检、老板端看板与客服端改进建议已接入。 <a href="{{introduceUrl}}" target="_blank" rel="noopener noreferrer">查看项目说明</a>',
   },
 
   /**
-   * 以下为历史示例片段（默认注释），需要时可取消注释并酌情调整日期 / import：
-   *
-   * 五月短区间示例：含当前日期则会出现节日滚动条；烟花需当日首次进入且未在同日标记已播。
-   * 上线前请改成真实活动日期与文案。
+   * 以下保留为活动公告模板（默认注释），需要时可取消注释并酌情调整日期 / import。
    */
   // {
   //   name: "五月温馨提示",
@@ -80,7 +77,7 @@ export const festivalConfigList: FestivalConfig[] = [
   //     "🎉 五月快乐！FastAPI Admin 祝您工作顺利、迭代顺利。本月请关注备份与安全策略，遇到问题可先查看文档或联系运维。",
   // },
 
-  /** 单日示例（圣诞节）：需取消注释并确保已 import 雪花图 */
+  /** 单日公告（圣诞节）：需取消注释并确保已 import 雪花图 */
   // {
   //   name: "圣诞节",
   //   date: "2026-12-25",
@@ -90,7 +87,7 @@ export const festivalConfigList: FestivalConfig[] = [
   //     "Merry Christmas！祝您圣诞快乐，愿节日的欢乐与祝福如雪花般纷至沓来！",
   // },
 
-  /** 版本公告类跨日期示例（仅文案参考，可按需改写 scrollText） */
+  /** 版本公告类跨日期配置（仅文案参考，可按需改写 scrollText） */
   // {
   //   name: "v3.0 测试阶段",
   //   date: "2026-11-03",

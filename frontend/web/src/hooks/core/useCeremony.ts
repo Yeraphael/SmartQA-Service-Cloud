@@ -1,4 +1,4 @@
-/**
+﻿/**
  * useCeremony - 节日庆祝管理
  *
  * 提供节日烟花效果和祝福文本展示功能，为系统增添节日氛围。
@@ -42,7 +42,7 @@
  * ```
  *
  * @module useCeremony
- * @author FastapiAdmin Team
+ * @author SmartQA
  */
 
 import { useTimeoutFn, useIntervalFn, useDateFormat } from "@vueuse/core";

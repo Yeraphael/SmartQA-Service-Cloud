@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 字典状态管理模块
  *
  * 提供数据字典的状态管理和缓存机制
@@ -31,7 +31,7 @@
  * - 减少重复请求
  *
  * @module store/modules/dict.store
- * @author FastapiAdmin Team
+ * @author SmartQA
  */
 import { store } from "@stores";
 import DictAPI, { DictDataTable } from "@/api/module_system/dict";

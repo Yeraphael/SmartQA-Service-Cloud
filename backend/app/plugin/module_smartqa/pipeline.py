@@ -323,12 +323,14 @@ class SmartQAPipeline:
         with mysql_conn(self.target_config) as conn:
             try:
                 with conn.cursor() as cur:
+                    dropped_tables = self._drop_retired_template_tables(cur)
                     boss_user_id = self._ensure_boss(cur)
                     role_ids = self._ensure_roles(cur)
                     self._bind_user_role(cur, boss_user_id, role_ids["boss"])
                     menu_result = self._ensure_smartqa_menus(cur)
-                    self._bind_role_menus(cur, role_ids["boss"], menu_result["menu_ids"])
-                    self._bind_role_menus(cur, role_ids["staff"], menu_result["menu_ids"])
+                    deleted_menus = self._cleanup_template_menus(cur, menu_result["all_menu_ids"])
+                    self._bind_role_menus(cur, role_ids["boss"], menu_result["boss_menu_ids"])
+                    self._bind_role_menus(cur, role_ids["staff"], menu_result["staff_menu_ids"])
                     rule_count = self._ensure_default_rules(cur)
                     staff_result = self._ensure_staff_users(cur, role_ids["staff"])
                 conn.commit()
@@ -339,7 +341,10 @@ class SmartQAPipeline:
             "boss_user_id": boss_user_id,
             "roles": role_ids,
             "menus": menu_result["changed"],
-            "menu_ids": menu_result["menu_ids"],
+            "deleted_menus": deleted_menus,
+            "dropped_tables": dropped_tables,
+            "boss_menu_ids": menu_result["boss_menu_ids"],
+            "staff_menu_ids": menu_result["staff_menu_ids"],
             "rules": rule_count,
             **staff_result,
         }
@@ -1170,93 +1175,211 @@ class SmartQAPipeline:
         for menu_id in menu_ids:
             cur.execute("INSERT IGNORE INTO sys_role_menus (role_id, menu_id) VALUES (%s,%s)", (role_id, menu_id))
 
+    def _drop_retired_template_tables(self, cur: pymysql.cursors.DictCursor) -> list[str]:
+        tables = [
+            "platform_email_log",
+            "platform_email_template",
+            "platform_email_config",
+            "platform_invoice",
+            "platform_payment",
+            "platform_refund",
+            "platform_order",
+            "platform_package_menu",
+            "platform_tenant_plugin",
+            "platform_plugin",
+            "platform_package",
+            "sys_notice_read",
+            "sys_notice",
+            "sys_ticket",
+            "sys_login_log",
+            "sys_operation_log",
+            "task_workflow_node_type",
+            "task_workflow_node",
+            "task_workflow",
+            "task_cronjob_node",
+            "task_cronjob_job",
+            "gen_table_column",
+            "gen_table",
+            "example_demo",
+            "ai_chat_message",
+            "ai_chat_session",
+        ]
+        dropped: list[str] = []
+        for table in tables:
+            cur.execute(
+                """
+                SELECT TABLE_NAME
+                FROM information_schema.TABLES
+                WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=%s
+                """,
+                (table,),
+            )
+            if not cur.fetchone():
+                continue
+            cur.execute(
+                """
+                SELECT TABLE_NAME, CONSTRAINT_NAME
+                FROM information_schema.KEY_COLUMN_USAGE
+                WHERE TABLE_SCHEMA=DATABASE()
+                  AND REFERENCED_TABLE_SCHEMA=DATABASE()
+                  AND REFERENCED_TABLE_NAME=%s
+                  AND CONSTRAINT_NAME <> 'PRIMARY'
+                """,
+                (table,),
+            )
+            for fk in cur.fetchall():
+                cur.execute(f"ALTER TABLE `{fk['TABLE_NAME']}` DROP FOREIGN KEY `{fk['CONSTRAINT_NAME']}`")
+            cur.execute(f"DROP TABLE IF EXISTS `{table}`")
+            dropped.append(table)
+        return dropped
+
+    def _cleanup_template_menus(self, cur: pymysql.cursors.DictCursor, keep_menu_ids: list[int]) -> int:
+        if not keep_menu_ids:
+            return 0
+        placeholders = ",".join(["%s"] * len(keep_menu_ids))
+        cur.execute(
+            f"""
+            UPDATE platform_menu
+            SET is_deleted=1, status=1, hidden=1, deleted_time=NOW(), updated_time=NOW()
+            WHERE is_deleted=0 AND id NOT IN ({placeholders})
+            """,
+            keep_menu_ids,
+        )
+        deleted = cur.rowcount
+        cur.execute(
+            """
+            DELETE rm
+            FROM sys_role_menus rm
+            LEFT JOIN platform_menu m ON rm.menu_id=m.id
+            WHERE m.id IS NULL OR m.is_deleted=1
+            """
+        )
+        return deleted
+
     def _ensure_smartqa_menus(self, cur: pymysql.cursors.DictCursor) -> dict[str, Any]:
-        menus = [
-            {
-                "name": "SmartQA",
-                "type": 1,
-                "icon": "ri:customer-service-2-line",
-                "order": 1,
-                "permission": None,
-                "route_name": "SmartQA",
-                "route_path": "/smartqa",
-                "component_path": None,
-                "redirect": "/smartqa/dashboard",
-                "children": [
-                    ("工作台", "SmartQADashboard", "dashboard", "module_smartqa/dashboard/index", "ri:dashboard-line"),
-                    ("千牛数据", "SmartQAQianniuData", "qianniu-data", "module_smartqa/qianniu-data/index", "ri:database-2-line"),
-                    ("会话明细", "SmartQAConversations", "conversations", "module_smartqa/conversations/index", "ri:message-3-line"),
-                    ("质检任务", "SmartQAQcTasks", "qc-tasks", "module_smartqa/qc-tasks/index", "ri:robot-2-line"),
-                    ("质检结果", "SmartQAQcResults", "qc-results", "module_smartqa/qc-results/index", "ri:file-chart-line"),
-                    ("客服账号", "SmartQAStaffUsers", "staff-users", "module_smartqa/staff-users/index", "ri:user-settings-line"),
-                ],
-            }
+        root = {
+            "name": "SmartQA",
+            "type": 1,
+            "icon": "ri:customer-service-2-line",
+            "order": 1,
+            "permission": None,
+            "route_name": "SmartQA",
+            "route_path": "/smartqa",
+            "component_path": None,
+            "redirect": "/smartqa/dashboard",
+        }
+        boss_children = [
+            ("工作台总览", "SmartQADashboard", "dashboard", "module_smartqa/dashboard/index", "ri:dashboard-line"),
+            ("千牛数据源", "SmartQAQianniuData", "qianniu-data", "module_smartqa/qianniu-data/index", "ri:database-2-line"),
+            ("会话管理", "SmartQAConversations", "conversations", "module_smartqa/conversations/index", "ri:message-3-line"),
+            ("AI质检任务", "SmartQAQcTasks", "qc-tasks", "module_smartqa/qc-tasks/index", "ri:robot-2-line"),
+            ("质检结果", "SmartQAQcResults", "qc-results", "module_smartqa/qc-results/index", "ri:file-chart-line"),
+            ("客服表现", "SmartQAStaffPerformance", "staff-performance", "module_smartqa/staff-performance/index", "ri:bar-chart-grouped-line"),
+            ("质检规则", "SmartQAQcRules", "qc-rules", "module_smartqa/qc-rules/index", "ri:survey-line"),
+            ("客服账号", "SmartQAStaffUsers", "staff-users", "module_smartqa/staff-users/index", "ri:user-settings-line"),
+        ]
+        staff_children = [
+            ("我的工作台", "SmartQAMyDashboard", "my-dashboard", "module_smartqa/my-dashboard/index", "ri:home-smile-line"),
+            ("我的会话", "SmartQAMyConversations", "my-conversations", "module_smartqa/my-conversations/index", "ri:message-2-line"),
+            ("我的质检结果", "SmartQAMyQcResults", "my-qc-results", "module_smartqa/my-qc-results/index", "ri:file-list-3-line"),
+            ("我的改进建议", "SmartQAMyImprovements", "my-improvements", "module_smartqa/my-improvements/index", "ri:lightbulb-flash-line"),
         ]
         changed = 0
-        menu_ids: list[int] = []
-        for root in menus:
-            cur.execute("SELECT id FROM platform_menu WHERE route_name=%s AND is_deleted=0", (root["route_name"],))
-            row = cur.fetchone()
-            if row:
-                root_id = row["id"]
-                cur.execute("UPDATE platform_menu SET hidden=0, status=0, updated_time=NOW() WHERE id=%s", (root_id,))
-            else:
+        boss_menu_ids: list[int] = []
+        staff_menu_ids: list[int] = []
+        all_menu_ids: list[int] = []
+
+        cur.execute("SELECT id FROM platform_menu WHERE route_name=%s AND is_deleted=0", (root["route_name"],))
+        row = cur.fetchone()
+        if row:
+            root_id = row["id"]
+            cur.execute(
+                """
+                UPDATE platform_menu
+                SET name=%s, title=%s, route_path=%s, redirect=%s, hidden=0, status=0,
+                    parent_id=NULL, updated_time=NOW()
+                WHERE id=%s
+                """,
+                (root["name"], root["name"], root["route_path"], root["redirect"], root_id),
+            )
+        else:
+            cur.execute(
+                """
+                INSERT INTO platform_menu (
+                    name, type, `order`, permission, icon, route_name, route_path, component_path,
+                    redirect, hidden, keep_alive, always_show, title, params, affix, client, link,
+                    is_iframe, is_hide_tab, active_path, show_badge, show_text_badge, scope, status,
+                    description, parent_id, created_time, updated_time, uuid, is_deleted
+                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,0,1,1,%s,NULL,0,'pc',NULL,0,0,NULL,0,NULL,'tenant',0,'SmartQA P0',NULL,NOW(),NOW(),UUID(),0)
+                """,
+                (
+                    root["name"],
+                    root["type"],
+                    root["order"],
+                    root["permission"],
+                    root["icon"],
+                    root["route_name"],
+                    root["route_path"],
+                    root["component_path"],
+                    root["redirect"],
+                    root["name"],
+                ),
+            )
+            root_id = cur.lastrowid
+            changed += 1
+
+        boss_menu_ids.append(root_id)
+        staff_menu_ids.append(root_id)
+        all_menu_ids.append(root_id)
+
+        def ensure_child(idx: int, item: tuple[str, str, str, str, str]) -> int:
+            nonlocal changed
+            name, route_name, route_path, component_path, icon = item
+            permission = f"module_smartqa:{route_path}:query"
+            cur.execute("SELECT id FROM platform_menu WHERE route_name=%s AND is_deleted=0", (route_name,))
+            child = cur.fetchone()
+            if child:
+                child_id = child["id"]
                 cur.execute(
                     """
-                    INSERT INTO platform_menu (
-                        name, type, `order`, permission, icon, route_name, route_path, component_path,
-                        redirect, hidden, keep_alive, always_show, title, params, affix, client, link,
-                        is_iframe, is_hide_tab, active_path, show_badge, show_text_badge, scope, status,
-                        description, parent_id, created_time, updated_time, uuid, is_deleted
-                    ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,0,1,1,%s,NULL,0,'pc',NULL,0,0,NULL,0,NULL,'tenant',0,'SmartQA P0',NULL,NOW(),NOW(),UUID(),0)
+                    UPDATE platform_menu
+                    SET name=%s, title=%s, `order`=%s, permission=%s, icon=%s, route_path=%s,
+                        component_path=%s, hidden=0, status=0, parent_id=%s, updated_time=NOW()
+                    WHERE id=%s
                     """,
-                    (
-                        root["name"],
-                        root["type"],
-                        root["order"],
-                        root["permission"],
-                        root["icon"],
-                        root["route_name"],
-                        root["route_path"],
-                        root["component_path"],
-                        root["redirect"],
-                        root["name"],
-                    ),
+                    (name, name, idx, permission, icon, route_path, component_path, root_id, child_id),
                 )
-                root_id = cur.lastrowid
-                changed += 1
-            menu_ids.append(root_id)
-            for idx, (name, route_name, route_path, component_path, icon) in enumerate(root["children"], start=1):
-                cur.execute("SELECT id FROM platform_menu WHERE route_name=%s AND is_deleted=0", (route_name,))
-                child = cur.fetchone()
-                if child:
-                    cur.execute("UPDATE platform_menu SET hidden=0, status=0, parent_id=%s, updated_time=NOW() WHERE id=%s", (root_id, child["id"]))
-                    menu_ids.append(child["id"])
-                    continue
-                cur.execute(
-                    """
-                    INSERT INTO platform_menu (
-                        name, type, `order`, permission, icon, route_name, route_path, component_path,
-                        redirect, hidden, keep_alive, always_show, title, params, affix, client, link,
-                        is_iframe, is_hide_tab, active_path, show_badge, show_text_badge, scope, status,
-                        description, parent_id, created_time, updated_time, uuid, is_deleted
-                    ) VALUES (%s,2,%s,%s,%s,%s,%s,%s,NULL,0,1,0,%s,NULL,0,'pc',NULL,0,0,NULL,0,NULL,'tenant',0,'SmartQA P0',%s,NOW(),NOW(),UUID(),0)
-                    """,
-                    (
-                        name,
-                        idx,
-                        f"module_smartqa:{route_path}:query",
-                        icon,
-                        route_name,
-                        route_path,
-                        component_path,
-                        name,
-                        root_id,
-                    ),
-                )
-                menu_ids.append(cur.lastrowid)
-                changed += 1
-        return {"changed": changed, "menu_ids": menu_ids}
+                return child_id
+            cur.execute(
+                """
+                INSERT INTO platform_menu (
+                    name, type, `order`, permission, icon, route_name, route_path, component_path,
+                    redirect, hidden, keep_alive, always_show, title, params, affix, client, link,
+                    is_iframe, is_hide_tab, active_path, show_badge, show_text_badge, scope, status,
+                    description, parent_id, created_time, updated_time, uuid, is_deleted
+                ) VALUES (%s,2,%s,%s,%s,%s,%s,%s,NULL,0,1,0,%s,NULL,0,'pc',NULL,0,0,NULL,0,NULL,'tenant',0,'SmartQA P0',%s,NOW(),NOW(),UUID(),0)
+                """,
+                (name, idx, permission, icon, route_name, route_path, component_path, name, root_id),
+            )
+            changed += 1
+            return cur.lastrowid
+
+        for idx, item in enumerate(boss_children, start=1):
+            menu_id = ensure_child(idx, item)
+            boss_menu_ids.append(menu_id)
+            all_menu_ids.append(menu_id)
+
+        for idx, item in enumerate(staff_children, start=len(boss_children) + 1):
+            menu_id = ensure_child(idx, item)
+            staff_menu_ids.append(menu_id)
+            all_menu_ids.append(menu_id)
+
+        return {
+            "changed": changed,
+            "boss_menu_ids": boss_menu_ids,
+            "staff_menu_ids": staff_menu_ids,
+            "all_menu_ids": sorted(set(all_menu_ids)),
+        }
 
     def _ensure_default_rules(self, cur: pymysql.cursors.DictCursor) -> int:
         prompt = (

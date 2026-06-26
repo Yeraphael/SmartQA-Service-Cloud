@@ -100,12 +100,12 @@ def console_start(
     )
 
     if not _stdout_is_utf8():
-        print(f"FastapiAdmin started at {url} ({settings.ENVIRONMENT})")
+        print(f"SmartQA started at {url} ({settings.ENVIRONMENT})")
         return
     try:
         console.print(result)
     except UnicodeEncodeError:
-        print(f"FastapiAdmin started at {url} ({settings.ENVIRONMENT})")
+        print(f"SmartQA started at {url} ({settings.ENVIRONMENT})")
 
 
 def console_end() -> None:
@@ -117,7 +117,7 @@ def console_end() -> None:
     """
     shutdown_content = Text()
     shutdown_content.append("🛑 ", style="bold red")
-    shutdown_content.append("FastapiAdmin 服务关闭")
+    shutdown_content.append("SmartQA 服务关闭")
     shutdown_content.append(f"\n⏰ {datetime.now().strftime('%H:%M:%S')}")
     shutdown_content.append("\n👋 感谢使用！", style="dim")
 
@@ -129,9 +129,9 @@ def console_end() -> None:
     )
 
     if not _stdout_is_utf8():
-        print(f"FastapiAdmin stopped at {datetime.now().strftime('%H:%M:%S')}")
+        print(f"SmartQA stopped at {datetime.now().strftime('%H:%M:%S')}")
         return
     try:
         console.print(result)
     except UnicodeEncodeError:
-        print(f"FastapiAdmin stopped at {datetime.now().strftime('%H:%M:%S')}")
+        print(f"SmartQA stopped at {datetime.now().strftime('%H:%M:%S')}")

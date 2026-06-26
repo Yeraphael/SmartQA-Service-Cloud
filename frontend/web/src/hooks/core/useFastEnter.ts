@@ -1,4 +1,4 @@
-/**
+﻿/**
  * useFastEnter - 快速入口管理
  *
  * 管理顶部栏的快速入口功能，提供应用列表和快速链接的配置和过滤。
@@ -12,7 +12,7 @@
  * 4. 宽度控制 - 提供最小显示宽度配置，支持响应式布局
  *
  * @module useFastEnter
- * @author FastapiAdmin Team
+ * @author SmartQA
  */
 
 import { computed } from "vue";

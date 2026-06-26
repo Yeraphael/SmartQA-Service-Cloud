@@ -1,4 +1,4 @@
-/**
+﻿/**
  * useTheme - 系统主题管理
  *
  * 提供完整的主题切换和管理功能，支持亮色、暗色和自动模式。
@@ -28,7 +28,7 @@
  * ```
  *
  * @module useTheme
- * @author FastapiAdmin Team
+ * @author SmartQA
  */
 
 import { useSettingsStore } from "@stores";

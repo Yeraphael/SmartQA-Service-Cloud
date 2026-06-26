@@ -3,7 +3,7 @@
 
 目录与命名规范（不满足则无法注册或导入失败）：
 - 插件必须放在 ``app/plugin`` 下，且**顶级目录名**必须以 ``module_`` 开头，例如
-  ``module_example``、``module_yourfeature``（扫描模式：``module_*/**/controller.py``）。
+  ``module_smartqa``（扫描模式：``module_*/**/controller.py``）。
 - 控制器文件名必须为 ``controller.py``（大小写敏感，Linux 上 ``Controller.py`` 无效）。
 - 从 ``module_xxx`` 到 ``controller.py`` 的**每一级目录名**须为合法 Python 标识符
   （仅字母数字下划线、不以数字开头；不要使用中划线、空格、中文目录名等）。
