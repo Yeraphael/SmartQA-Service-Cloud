@@ -6,7 +6,7 @@
 
 - 源数据只读库：`aizhijian`
 - 扩建业务库：`smartqa`
-- 初始老板账号：`boss/admin`
+- 初始老板账号：`boss/SmartQA@123456`
 - AI 模型：阿里百炼 `qwen3.7-plus`
 - 后端运行时仅启用 SmartQA 业务插件，原框架示例、任务、内置 AI 聊天等非 P0 模块不进入业务菜单和业务路由。
 

@@ -222,7 +222,7 @@ class Settings(BaseSettings):
     SMARTQA_SOURCE_DB_NAME: str = "aizhijian"
     SMARTQA_TARGET_DB_NAME: str = "smartqa"
     SMARTQA_BOSS_USERNAME: str = "boss"
-    SMARTQA_BOSS_INITIAL_PASSWORD: str = "admin"
+    SMARTQA_BOSS_INITIAL_PASSWORD: str = "SmartQA@123456"
     SMARTQA_ALI_MODEL_NAME: str = "qwen3.7-plus"
     SMARTQA_QC_TASK_CONCURRENCY: int = 2
     SMARTQA_SYNC_OVERLAP_MINUTES: int = 120

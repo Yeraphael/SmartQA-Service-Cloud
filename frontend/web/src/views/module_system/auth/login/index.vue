@@ -338,29 +338,22 @@ watch(authPanel, (panel) => {
 
 const accounts = computed<Account[]>(() => [
   {
-    key: "super",
-    label: t("login.roles.super"),
-    username: "super",
-    password: "123456",
-    roles: ["R_SUPER"],
+    key: "boss",
+    label: "老板端",
+    username: "boss",
+    password: "SmartQA@123456",
+    roles: ["smartqa_boss"],
   },
   {
-    key: "admin",
-    label: t("login.roles.admin"),
-    username: "admin",
-    password: "123456",
-    roles: ["R_ADMIN"],
-  },
-  {
-    key: "user",
-    label: t("login.roles.user"),
-    username: "user",
-    password: "123456",
-    roles: ["R_USER"],
+    key: "staff",
+    label: "客服端示例",
+    username: "staff_211e9e54ee",
+    password: "SmartQA@123456",
+    roles: ["smartqa_staff"],
   },
 ]);
 
-const demoAccountKey = ref<AccountKey>("super");
+const demoAccountKey = ref<AccountKey>("boss");
 const userStore = useUserStore();
 const router = useRouter();
 const route = useRoute();
@@ -568,7 +561,7 @@ const showVoteNotification = () => {
 let voteTimer: ReturnType<typeof setTimeout> | null = null;
 
 onMounted(async () => {
-  setupAccount("super");
+  setupAccount("boss");
   await configStore.getConfig(true);
   await tryConsumeOAuthCallback();
   if (userStore.isLogin) {

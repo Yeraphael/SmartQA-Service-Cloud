@@ -94,6 +94,33 @@ export class HttpError extends Error {
   }
 }
 
+function normalizeErrorMessage(message: unknown, fallback: string): string {
+  if (typeof message === "string" && message.trim()) {
+    return message;
+  }
+  if (Array.isArray(message)) {
+    return message
+      .map((item) => normalizeErrorMessage(item, ""))
+      .filter(Boolean)
+      .join("；") || fallback;
+  }
+  if (message && typeof message === "object") {
+    const record = message as Record<string, unknown>;
+    for (const key of ["msg", "message", "detail", "error"]) {
+      const value = record[key];
+      if (typeof value === "string" && value.trim()) {
+        return value;
+      }
+    }
+    try {
+      return JSON.stringify(message);
+    } catch {
+      return fallback;
+    }
+  }
+  return fallback;
+}
+
 const getErrorMessage = (status: number): string => {
   const errorMap: Record<number, string> = {
     [ApiStatus.unauthorized]: "httpMsg.unauthorized",
@@ -117,7 +144,7 @@ export function handleError(error: AxiosError<ApiResponse>): never {
   }
 
   const statusCode = error.response?.status;
-  const errorMessage = error.response?.data?.msg || error.message;
+  const errorMessage = normalizeErrorMessage(error.response?.data?.msg, error.message);
   const requestConfig = error.config;
 
   if (!error.response) {
@@ -238,8 +265,15 @@ request.interceptors.response.use(
     const data = response.data;
 
     if (data.code !== ResultEnum.SUCCESS) {
-      ElMessage.error(data.msg);
-      return Promise.reject(response);
+      const msg = normalizeErrorMessage(data.msg, "请求错误");
+      ElMessage.error(msg);
+      return Promise.reject(
+        new HttpError(msg, ApiStatus.error, {
+          data,
+          url: response.config.url,
+          method: response.config.method,
+        })
+      );
     }
 
     if (
@@ -356,14 +390,17 @@ request.interceptors.response.use(
 
     // ── 业务错误（按 code 分类） ──
     if (data?.code === ResultEnum.ERROR) {
-      ElMessage.error(data.msg || "请求错误");
-      return Promise.reject(new HttpError(data.msg || "请求错误", ApiStatus.error));
+      const msg = normalizeErrorMessage(data.msg, "请求错误");
+      ElMessage.error(msg);
+      return Promise.reject(new HttpError(msg, ApiStatus.error));
     } else if (data?.code === ResultEnum.UNAUTHORIZED) {
-      ElMessage.error(data.msg || "暂无权限");
-      return Promise.reject(new HttpError(data.msg || "请求错误", ApiStatus.unauthorized));
+      const msg = normalizeErrorMessage(data.msg, "暂无权限");
+      ElMessage.error(msg);
+      return Promise.reject(new HttpError(msg, ApiStatus.unauthorized));
     } else if (data?.code === ResultEnum.EXCEPTION) {
-      ElMessage.error(data.msg || "服务异常");
-      return Promise.reject(new HttpError(data.msg || "服务异常", ApiStatus.error));
+      const msg = normalizeErrorMessage(data.msg, "服务异常");
+      ElMessage.error(msg);
+      return Promise.reject(new HttpError(msg, ApiStatus.error));
     } else {
       ElMessage.error("请求处理失败，请稍后重试");
       return Promise.reject(new Error("请求处理失败"));

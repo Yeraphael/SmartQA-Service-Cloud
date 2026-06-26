@@ -1081,7 +1081,7 @@ class SmartQAPipeline:
 
     def _ensure_boss(self, cur: pymysql.cursors.DictCursor) -> int:
         username = os.getenv("SMARTQA_BOSS_USERNAME") or settings.SMARTQA_BOSS_USERNAME or "boss"
-        password = os.getenv("SMARTQA_BOSS_INITIAL_PASSWORD") or settings.SMARTQA_BOSS_INITIAL_PASSWORD or "admin"
+        password = os.getenv("SMARTQA_BOSS_INITIAL_PASSWORD") or settings.SMARTQA_BOSS_INITIAL_PASSWORD or "SmartQA@123456"
         cur.execute("SELECT id FROM sys_user WHERE username=%s AND tenant_id=%s AND is_deleted=0", (username, self.tenant_id))
         row = cur.fetchone()
         if row:
