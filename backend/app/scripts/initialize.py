@@ -33,13 +33,10 @@ from app.api.v1.module_system.user.model import UserModel, UserRolesModel
 from app.config.path_conf import SCRIPT_DIR
 from app.core.database import async_db_session, create_tables
 from app.core.logger import logger
-from app.plugin.module_example.demo.model import DemoModel
 from app.plugin.module_smartqa.models.conversation import DwdCustomerStaffRelationModel, DwdQnConversationModel, DwdQnMessageModel
 from app.plugin.module_smartqa.models.dimension import DimCustomerIdentityModel, DimCustomerModel, DimProductModel, DimShopModel, DimStaffAccountModel, DimStaffModel
 from app.plugin.module_smartqa.models.ods import OdsImportBatchModel, OdsQnChatRecordModel, OdsQnShopRecordModel
 from app.plugin.module_smartqa.models.qc import ModelCallLogModel, QcIssueEvidenceModel, QcIssueModel, QcPromptTemplateModel, QcResultModel, QcRuleModel, QcRuleVersionModel, QcTaskModel
-from app.plugin.module_task.cronjob.node.model import NodeModel
-from app.plugin.module_task.workflow.nodes.model import WorkflowNodeTypeModel
 
 
 class InitializeData:
@@ -84,9 +81,6 @@ class InitializeData:
         LoginLogModel,
         OperationLogModel,
         # ── 插件表 ──
-        NodeModel,
-        WorkflowNodeTypeModel,
-        DemoModel,
         # ── SmartQA 业务表 ──
         OdsImportBatchModel,
         OdsQnChatRecordModel,

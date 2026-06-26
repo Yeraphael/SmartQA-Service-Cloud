@@ -45,7 +45,13 @@ async def redis_getter(request: Request) -> Redis:
     返回:
     - Redis: Redis连接
     """
-    return request.app.state.redis
+    redis = getattr(request.app.state, "redis", None)
+    if redis is None:
+        from app.core.memory_redis import MemoryRedis
+
+        redis = MemoryRedis()
+        request.app.state.redis = redis
+    return redis
 
 
 async def get_current_tenant_id() -> int | None:
@@ -163,9 +169,9 @@ async def _load_user_from_db(db: AsyncSession, username: str):
 
     # 过滤不可用的角色和职位（在会话内完成，确保关联数据已加载）
     if hasattr(user, "roles"):
-        user.roles = [role for role in user.roles if role and role.status]
+        user.roles = [role for role in user.roles if role and role.status == 0]
     if hasattr(user, "positions"):
-        user.positions = [pos for pos in user.positions if pos and pos.status]
+        user.positions = [pos for pos in user.positions if pos and pos.status == 0]
 
     return user
 

@@ -8,6 +8,37 @@ from app.plugin.module_smartqa.models.conversation import DwdQnConversationModel
 from app.plugin.module_smartqa.models.dimension import DimStaffModel
 
 
+async def is_smartqa_boss(auth: AuthSchema) -> bool:
+    """Return whether current user has SmartQA boss-level access."""
+
+    user = auth.user
+    if not user:
+        return False
+    if user.is_superuser:
+        return True
+    if any(getattr(role, "code", None) == "smartqa_boss" for role in (getattr(user, "roles", None) or [])):
+        return True
+    if not auth.db or not getattr(user, "id", None):
+        return False
+
+    from app.api.v1.module_system.role.model import RoleModel
+    from app.api.v1.module_system.user.model import UserRolesModel
+
+    stmt = (
+        select(RoleModel.code)
+        .join(UserRolesModel, RoleModel.id == UserRolesModel.role_id)
+        .where(
+            UserRolesModel.user_id == user.id,
+            RoleModel.code == "smartqa_boss",
+            RoleModel.status == 0,
+            RoleModel.is_deleted == False,  # noqa: E712
+        )
+        .limit(1)
+    )
+    result = await auth.db.execute(stmt)
+    return result.scalar_one_or_none() == "smartqa_boss"
+
+
 async def get_bound_staff_id(auth: AuthSchema) -> int | None:
     """Return staff id bound to current system user."""
 
@@ -27,7 +58,7 @@ async def build_staff_scope_condition(
 ) -> ColumnElement | None:
     """老板看全量，客服只看绑定客服的数据。"""
 
-    if auth.user and auth.user.is_superuser:
+    if await is_smartqa_boss(auth):
         return None
 
     staff_id = await get_bound_staff_id(auth)
@@ -45,11 +76,10 @@ async def ensure_conversation_access(
 
     if not conversation:
         raise CustomException(msg="会话不存在")
-    if auth.user and auth.user.is_superuser:
+    if await is_smartqa_boss(auth):
         return conversation
 
     staff_id = await get_bound_staff_id(auth)
     if not staff_id or conversation.staff_id != staff_id:
         raise CustomException(msg="无权查看该会话", code=10403, status_code=403)
     return conversation
-

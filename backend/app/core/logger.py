@@ -1,5 +1,6 @@
 import logging
 import sys
+import io
 
 from loguru import logger
 
@@ -40,7 +41,10 @@ def setup_logger() -> None:
         "<level>{message}</level>"
         "{extra[ctx]}"
     )
-    logger.add(sys.stdout, format=LOG_FMT, level=settings.LOGGER_LEVEL)
+    stdout = sys.stdout
+    if getattr(stdout, "encoding", None) and stdout.encoding.lower() not in {"utf-8", "utf8"}:
+        stdout = io.TextIOWrapper(stdout.buffer, encoding="utf-8", errors="replace", line_buffering=True)
+    logger.add(stdout, format=LOG_FMT, level=settings.LOGGER_LEVEL)
     logger.add(
         str(LOG_DIR / "fastapiadmin.log"),
         format=LOG_FMT,

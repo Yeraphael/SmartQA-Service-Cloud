@@ -227,6 +227,8 @@ class Settings(BaseSettings):
     SMARTQA_QC_TASK_CONCURRENCY: int = 2
     SMARTQA_SYNC_OVERLAP_MINUTES: int = 120
     SMARTQA_SHOP_RECORD_ROLLING_DAYS: int = 7
+    PLUGIN_MODULE_ALLOWLIST: list[str] = ["module_smartqa"]
+    SCHEDULER_ENABLE: bool = False
 
     # ================================================= #
     # ******************* 请求限制配置 ****************** #

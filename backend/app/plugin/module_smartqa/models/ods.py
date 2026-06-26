@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, Integer, String, Text, UniqueConstraint
+from sqlalchemy import DateTime, Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.base_model import ModelMixin, TenantMixin, UserMixin
@@ -35,7 +35,7 @@ class OdsQnChatRecordModel(ModelMixin, TenantMixin, UserMixin):
     __tablename__: str = "ods_qn_chat_record"
     __table_args__ = (
         UniqueConstraint("source_system", "source_id", name="uq_ods_qn_chat_source_id"),
-        UniqueConstraint("source_system", "message_fingerprint", name="uq_ods_qn_chat_fingerprint"),
+        Index("ix_ods_qn_chat_fingerprint", "source_system", "message_fingerprint"),
         {"comment": "千牛聊天明细原始表"},
     )
     __loader_options__: list[str] = ["created_by", "updated_by", "deleted_by", "tenant_by"]
@@ -83,4 +83,3 @@ class OdsQnShopRecordModel(ModelMixin, TenantMixin, UserMixin):
     row_hash: Mapped[str] = mapped_column(String(64), nullable=False, comment="原始行哈希")
     first_seen_batch_id: Mapped[str | None] = mapped_column(String(64), nullable=True, comment="首次出现批次")
     last_seen_batch_id: Mapped[str | None] = mapped_column(String(64), nullable=True, comment="最后出现批次")
-

@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.base_model import ModelMixin, TenantMixin, UserMixin
@@ -43,7 +43,7 @@ class DwdQnMessageModel(ModelMixin, TenantMixin, UserMixin):
     __tablename__: str = "dwd_qn_message"
     __table_args__ = (
         UniqueConstraint("source_system", "source_message_id", name="uq_dwd_qn_message_source_id"),
-        UniqueConstraint("source_system", "message_fingerprint", name="uq_dwd_qn_message_fingerprint"),
+        Index("ix_dwd_qn_message_fingerprint", "source_system", "message_fingerprint"),
         {"comment": "千牛消息明细表"},
     )
     __loader_options__: list[str] = ["created_by", "updated_by", "deleted_by", "tenant_by"]
@@ -77,4 +77,3 @@ class DwdCustomerStaffRelationModel(ModelMixin, TenantMixin, UserMixin):
     first_conversation_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, comment="首次会话时间")
     last_conversation_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, comment="最近会话时间")
     conversation_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False, comment="会话数")
-

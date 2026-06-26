@@ -1,4 +1,5 @@
 from datetime import datetime
+import sys
 
 from rich import get_console
 from rich.console import Group
@@ -8,6 +9,11 @@ from rich.text import Text
 from app.config.setting import settings
 
 console = get_console()
+
+
+def _stdout_is_utf8() -> bool:
+    encoding = getattr(sys.stdout, "encoding", "") or ""
+    return encoding.lower().replace("-", "") == "utf8"
 
 
 def console_start(
@@ -93,7 +99,13 @@ def console_start(
         padding=(1, 2),
     )
 
-    console.print(result)
+    if not _stdout_is_utf8():
+        print(f"FastapiAdmin started at {url} ({settings.ENVIRONMENT})")
+        return
+    try:
+        console.print(result)
+    except UnicodeEncodeError:
+        print(f"FastapiAdmin started at {url} ({settings.ENVIRONMENT})")
 
 
 def console_end() -> None:
@@ -116,4 +128,10 @@ def console_end() -> None:
         padding=(1, 2),
     )
 
-    console.print(result)
+    if not _stdout_is_utf8():
+        print(f"FastapiAdmin stopped at {datetime.now().strftime('%H:%M:%S')}")
+        return
+    try:
+        console.print(result)
+    except UnicodeEncodeError:
+        print(f"FastapiAdmin stopped at {datetime.now().strftime('%H:%M:%S')}")

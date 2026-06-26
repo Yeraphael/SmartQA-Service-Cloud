@@ -11,6 +11,7 @@ from app.core.router_class import OperationLogRoute
 from .service import DashboardService
 
 DashboardRouter = APIRouter(route_class=OperationLogRoute, prefix="/dashboard", tags=["SmartQA", "看板"])
+router = DashboardRouter  # Alias for router import
 
 
 @DashboardRouter.get("/overview", summary="看板总览", response_model=ResponseSchema[dict])
@@ -24,7 +25,7 @@ async def get_dashboard_overview_controller(
 @DashboardRouter.get("/staff-ranking", summary="客服表现排行", response_model=ResponseSchema[list[dict]])
 async def get_staff_ranking_controller(
     auth: Annotated[AuthSchema, Depends(AuthPermission())],
-    limit: Annotated[int, Query(ge=1, le=100, description="返回数量")] = 20,
+    limit: int = Query(20, ge=1, le=100, description="返回数量"),
 ) -> JSONResponse:
     result = await DashboardService(auth).staff_ranking(limit=limit)
     return SuccessResponse(data=result, msg="查询客服排行成功")

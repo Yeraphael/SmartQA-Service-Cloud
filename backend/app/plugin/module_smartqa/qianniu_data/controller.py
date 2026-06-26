@@ -13,6 +13,7 @@ from .schema import ImportBatchQueryParam
 from .service import QianniuDataService
 
 QianniuDataRouter = APIRouter(route_class=OperationLogRoute, prefix="/qianniu", tags=["SmartQA", "千牛数据源"])
+router = QianniuDataRouter  # Alias for router import
 
 
 @QianniuDataRouter.get("/batches", summary="千牛同步批次列表", response_model=ResponseSchema[dict])

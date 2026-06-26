@@ -1,7 +1,9 @@
-from sqlalchemy import desc, select
+from sqlalchemy import desc, func, select
 
 from app.core.base_schema import AuthSchema
 from app.plugin.module_smartqa.common.pagination import paginate_query
+from app.plugin.module_smartqa.models.conversation import DwdQnConversationModel
+from app.plugin.module_smartqa.models.ods import OdsQnChatRecordModel, OdsQnShopRecordModel
 from app.plugin.module_smartqa.models.ods import OdsImportBatchModel
 
 from .schema import ImportBatchQueryParam
@@ -45,21 +47,33 @@ class QianniuDataService:
             .limit(1)
         )
         latest = (await self.auth.db.execute(latest_stmt)).scalars().first()
-        total_stmt = select(
-            OdsImportBatchModel.status,
-            OdsImportBatchModel.chat_rows,
-            OdsImportBatchModel.shop_rows,
-            OdsImportBatchModel.conversation_count,
-        ).where(OdsImportBatchModel.is_deleted == False)  # noqa: E712
-        rows = (await self.auth.db.execute(total_stmt)).all()
+        batch_rows = (
+            await self.auth.db.execute(
+                select(OdsImportBatchModel.status).where(OdsImportBatchModel.is_deleted == False)  # noqa: E712
+            )
+        ).all()
+        chat_rows = (
+            await self.auth.db.execute(
+                select(func.count()).select_from(OdsQnChatRecordModel).where(OdsQnChatRecordModel.is_deleted == False)  # noqa: E712
+            )
+        ).scalar_one()
+        shop_rows = (
+            await self.auth.db.execute(
+                select(func.count()).select_from(OdsQnShopRecordModel).where(OdsQnShopRecordModel.is_deleted == False)  # noqa: E712
+            )
+        ).scalar_one()
+        conversation_count = (
+            await self.auth.db.execute(
+                select(func.count()).select_from(DwdQnConversationModel).where(DwdQnConversationModel.is_deleted == False)  # noqa: E712
+            )
+        ).scalar_one()
         return {
             "latest_batch_id": latest.batch_id if latest else None,
             "latest_status": latest.status if latest else None,
             "latest_finished_at": latest.finished_at if latest else None,
-            "batch_count": len(rows),
-            "success_batch_count": sum(1 for row in rows if row.status == "success"),
-            "chat_rows": sum(row.chat_rows or 0 for row in rows),
-            "shop_rows": sum(row.shop_rows or 0 for row in rows),
-            "conversation_count": sum(row.conversation_count or 0 for row in rows),
+            "batch_count": len(batch_rows),
+            "success_batch_count": sum(1 for row in batch_rows if row.status == "success"),
+            "chat_rows": chat_rows,
+            "shop_rows": shop_rows,
+            "conversation_count": conversation_count,
         }
-

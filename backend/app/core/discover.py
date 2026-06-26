@@ -29,6 +29,7 @@ from fastapi import APIRouter
 from fastapi import FastAPI as _FastAPI
 
 # 内部库导入
+from app.config.setting import settings
 from app.core.logger import logger
 
 # 模块级缓存：最近一次构建的动态路由实例
@@ -64,6 +65,8 @@ def _build_dynamic_router() -> APIRouter:
             rel_path = file.relative_to(base_dir)
             path_parts = rel_path.parts
             top_module = path_parts[0]
+            if settings.PLUGIN_MODULE_ALLOWLIST and top_module not in settings.PLUGIN_MODULE_ALLOWLIST:
+                continue
 
             suffix = top_module[7:] if top_module.startswith("module_") else ""
             if not suffix:

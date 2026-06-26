@@ -12,6 +12,7 @@ SmartQAHealthRouter = APIRouter(
     prefix="/health",
     tags=["SmartQA", "健康检查"],
 )
+router = SmartQAHealthRouter  # Alias for router import
 
 
 @SmartQAHealthRouter.get(

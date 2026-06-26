@@ -13,6 +13,7 @@ from .schema import QcResultDetailSchema, QcResultQueryParam
 from .service import QcResultService
 
 QcResultRouter = APIRouter(route_class=OperationLogRoute, prefix="/qc/results", tags=["SmartQA", "质检结果"])
+router = QcResultRouter  # Alias for router import
 
 
 @QcResultRouter.get("/list", summary="质检结果列表", response_model=ResponseSchema[dict])

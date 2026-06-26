@@ -13,6 +13,7 @@ from .schema import ConversationDetailSchema, ConversationQueryParam
 from .service import ConversationService
 
 ConversationRouter = APIRouter(route_class=OperationLogRoute, prefix="/conversations", tags=["SmartQA", "会话"])
+router = ConversationRouter  # Alias for router import
 
 
 @ConversationRouter.get("/list", summary="会话列表", response_model=ResponseSchema[dict])
