@@ -20,6 +20,7 @@
 - 前端页面：`frontend/web/src/views/module_smartqa/`
 - 前端 API：`frontend/web/src/api/module_smartqa/`
 - 核心设计文档：`docs/项目系统设计精炼文档.md`
+- 启动使用文档：`docs/项目启动使用文档.md`
 
 ## 本地启动
 
