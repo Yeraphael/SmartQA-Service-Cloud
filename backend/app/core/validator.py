@@ -284,10 +284,7 @@ def role_permission_request_validator(data: Any) -> Any:
     """
     data_scopes = {
         1: "仅本人数据权限",
-        2: "本部门数据权限",
-        3: "本部门及以下数据权限",
         4: "全部数据权限",
-        5: "自定义数据权限",
     }
 
     if data.data_scope not in data_scopes:

@@ -10,7 +10,6 @@
  * - 语言管理（中文/英文）
  * - 侧边栏状态管理（展开/收起）
  * - 顶部菜单激活路径管理
- * - 引导功能可见性管理
  *
  * ## 使用场景
  *
@@ -18,7 +17,6 @@
  * - 多语言切换
  * - 侧边栏折叠展开
  * - 顶部菜单导航
- * - 新手引导展示
  *
  * @module store/modules/app.store
  * @author SmartQA
@@ -49,9 +47,6 @@ export const useAppStore = defineStore(
 
     /** 顶部菜单激活路径 */
     const activeTopMenuPath = ref<string>("");
-
-    /** 引导可见性 */
-    const guideVisible = ref<boolean>(false);
 
     /** 语言区域 */
     const locale = computed(() => {
@@ -93,11 +88,6 @@ export const useAppStore = defineStore(
       activeTopMenuPath.value = val;
     }
 
-    /** 显示或隐藏引导 */
-    function showGuide(val: boolean) {
-      guideVisible.value = val;
-    }
-
     return {
       device,
       sidebar,
@@ -106,14 +96,12 @@ export const useAppStore = defineStore(
       size,
       activeTopMenu,
       toggleDevice,
-      showGuide,
       changeSize,
       changeLanguage,
       toggleSidebar,
       closeSideBar,
       openSideBar,
       activeTopMenuPath,
-      guideVisible,
     };
   },
   {

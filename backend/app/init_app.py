@@ -23,7 +23,6 @@ from .utils.console import console_end, console_start
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[Any, Any]:
     from app.api.v1.module_platform.tenant.service import TenantService
-    from app.api.v1.module_system.dict.service import DictDataService
     from app.api.v1.module_system.params.service import ParamsService
 
     scheduler_util = None
@@ -48,15 +47,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[Any, Any]:
         if redis_ready:
             await ParamsService.init_cache(redis=redis)
             logger.info("✅ Redis系统参数初始化完成")
-            await DictDataService.init_cache(redis=redis)
-            logger.info("✅ Redis数据字典初始化完成")
             await TenantService.init_cache(redis=redis)
             logger.info("✅ Redis租户配置初始化完成")
             if scheduler_util:
                 await scheduler_util.init_scheduler(redis=redis)
                 logger.info("✅ 定时任务调度器初始化完成")
             await cache_util.init(redis=redis)
-            logger.info("✅ fastapi-admin-cache 初始化完成")
+            logger.info("✅ SmartQA 缓存初始化完成")
             await FastAPILimiter.init(
                 redis=redis,
                 prefix=settings.REQUEST_LIMITER_REDIS_PREFIX,
@@ -67,7 +64,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[Any, Any]:
             logger.info("✅ 请求限流器初始化完成")
         else:
             await cache_util.init(redis=None, enable=False)
-            logger.warning("Redis未启用，跳过参数/字典/租户缓存、调度器和限流器初始化")
+            logger.warning("Redis未启用，跳过参数/租户缓存、调度器和限流器初始化")
 
         console_start(
             host=settings.SERVER_HOST, port=settings.SERVER_PORT,
@@ -87,7 +84,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[Any, Any]:
             await scheduler_util.shutdown(wait=True)
             logger.info("✅ 定时任务调度器已关闭")
         await cache_util.clear()
-        logger.info("✅ fastapi-admin-cache 已关闭")
+        logger.info("✅ SmartQA 缓存已关闭")
         if getattr(app.state, "redis", None) and settings.REDIS_ENABLE:
             await FastAPILimiter.close()
             logger.info("✅ 请求限制器已关闭")

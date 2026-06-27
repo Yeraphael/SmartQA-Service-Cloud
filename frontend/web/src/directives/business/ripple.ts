@@ -12,21 +12,6 @@
  * - 自定义颜色 - 支持通过参数自定义波纹颜色
  * - 性能优化 - 使用 requestAnimationFrame 和自动清理机制
  *
- * ## 使用示例
- *
- * ```vue
- * <template>
- *   <!-- 基础用法 - 使用默认颜色 -->
- *   <el-button v-ripple>点击我</el-button>
- *
- *   <!-- 自定义颜色 -->
- *   <el-button v-ripple="{ color: 'rgba(255, 0, 0, 0.3)' }">自定义颜色</el-button>
- *
- *   <!-- 应用到任意元素 -->
- *   <div v-ripple class="custom-card">卡片内容</div>
- * </template>
- * ```
- *
  * ## 颜色规则
  *
  * - 有色按钮（primary、success、warning 等）：使用白色半透明波纹

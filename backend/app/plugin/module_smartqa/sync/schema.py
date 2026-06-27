@@ -42,3 +42,16 @@ class QianniuSyncResultSchema(BaseModel):
     elapsed_seconds: float | None = None
     build_result: dict = Field(default_factory=dict)
     seed_result: dict = Field(default_factory=dict)
+
+
+class QianniuSyncScheduleSchema(BaseModel):
+    """SmartQA scheduler status."""
+
+    scheduler_enabled: bool
+    scheduler_running: bool
+    timezone: str
+    source_sync_times: str
+    daily_qc_time: str
+    daily_qc_sample_limit: int
+    daily_qc_execute: bool
+    jobs: list[dict] = Field(default_factory=list)

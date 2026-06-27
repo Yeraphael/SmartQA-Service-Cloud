@@ -12,21 +12,6 @@
  * 4. 过渡优化 - 切换时临时禁用过渡效果，避免闪烁
  * 5. 状态持久化 - 主题设置自动保存到 store
  *
- * ## 使用示例
- *
- * ```typescript
- * const { switchThemeStyles } = useTheme()
- *
- * // 切换到暗色主题
- * switchThemeStyles(SystemThemeEnum.DARK)
- *
- * // 切换到亮色主题
- * switchThemeStyles(SystemThemeEnum.LIGHT)
- *
- * // 切换到自动模式（跟随系统）
- * switchThemeStyles(SystemThemeEnum.AUTO)
- * ```
- *
  * @module useTheme
  * @author SmartQA
  */

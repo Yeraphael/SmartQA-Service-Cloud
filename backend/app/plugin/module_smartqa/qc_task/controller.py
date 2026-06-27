@@ -10,7 +10,7 @@ from app.core.base_schema import AuthSchema
 from app.core.dependencies import AuthPermission, db_getter
 from app.plugin.module_smartqa.common.access import ensure_smartqa_boss
 
-from .schema import QcTaskCreateSchema, QcTaskExecuteSchema, QcTaskResultSchema, QcTaskSchema
+from .schema import QcDailySampleSchema, QcTaskCreateSchema, QcTaskExecuteSchema, QcTaskResultSchema, QcTaskSchema
 from .service import QcTaskService
 
 router = APIRouter(prefix="/qc/tasks", tags=["SmartQA - 质检任务"])
@@ -40,6 +40,17 @@ async def execute_tasks(
     service = QcTaskService(auth)
     results = await service.execute_tasks(session, data)
     return SuccessResponse(data=[QcTaskResultSchema.model_validate(r) for r in results], msg="执行完成")
+
+
+@router.post("/daily-sample", summary="创建每日抽检任务", response_model=ResponseSchema[dict])
+async def run_daily_sample(
+    data: QcDailySampleSchema,
+    auth: AuthSchema = Depends(AuthPermission()),
+):
+    """创建每日抽检任务，优先保证每个客服至少覆盖一条会话。"""
+    await ensure_smartqa_boss(auth)
+    result = await QcTaskService(auth).run_daily_sample(data)
+    return SuccessResponse(data=result, msg="每日抽检任务已生成")
 
 
 @router.get("/{task_id}", summary="获取任务详情", response_model=ResponseSchema[QcTaskSchema])

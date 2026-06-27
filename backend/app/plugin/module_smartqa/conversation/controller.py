@@ -7,12 +7,12 @@ from app.common.response import ResponseSchema, SuccessResponse
 from app.core.base_params import PaginationQueryParam
 from app.core.base_schema import AuthSchema
 from app.core.dependencies import AuthPermission
-from app.core.router_class import OperationLogRoute
+from app.core.router_class import SmartQARoute
 
 from .schema import ConversationDetailSchema, ConversationQueryParam
 from .service import ConversationService
 
-ConversationRouter = APIRouter(route_class=OperationLogRoute, prefix="/conversations", tags=["SmartQA", "会话"])
+ConversationRouter = APIRouter(route_class=SmartQARoute, prefix="/conversations", tags=["SmartQA", "会话"])
 router = ConversationRouter  # Alias for router import
 
 

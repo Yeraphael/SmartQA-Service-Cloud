@@ -7,13 +7,13 @@ from app.common.response import ResponseSchema, SuccessResponse
 from app.core.base_params import PaginationQueryParam
 from app.core.base_schema import AuthSchema
 from app.core.dependencies import AuthPermission
-from app.core.router_class import OperationLogRoute
+from app.core.router_class import SmartQARoute
 from app.plugin.module_smartqa.common.access import ensure_smartqa_boss
 
 from .schema import ImportBatchQueryParam
 from .service import QianniuDataService
 
-QianniuDataRouter = APIRouter(route_class=OperationLogRoute, prefix="/qianniu", tags=["SmartQA", "千牛数据源"])
+QianniuDataRouter = APIRouter(route_class=SmartQARoute, prefix="/qianniu", tags=["SmartQA", "千牛数据源"])
 router = QianniuDataRouter  # Alias for router import
 
 

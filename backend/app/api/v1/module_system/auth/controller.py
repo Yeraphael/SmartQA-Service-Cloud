@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 from redis.asyncio.client import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,19 +10,18 @@ from app.config.setting import settings
 from app.core.base_schema import JWTOutSchema, LogoutPayloadSchema, RefreshTokenPayloadSchema
 from app.core.dependencies import db_getter, get_current_user, redis_getter
 from app.core.logger import logger
-from app.core.router_class import OperationLogRoute
+from app.core.router_class import SmartQARoute
 from app.core.security import CustomOAuth2PasswordRequestForm
 
 from .schema import CaptchaOutSchema, LoginOutSchema
 from .service import CaptchaService, LoginService
 
-AuthRouter = APIRouter(route_class=OperationLogRoute, prefix="/auth", tags=["系统认证"])
+AuthRouter = APIRouter(route_class=SmartQARoute, prefix="/auth", tags=["系统认证"])
 
 
 @AuthRouter.post("/login", summary="登录", response_model=LoginOutSchema)
 async def login_for_access_token_controller(
     request: Request,
-    background_tasks: BackgroundTasks,
     redis: Annotated[Redis, Depends(redis_getter)],
     login_form: Annotated[CustomOAuth2PasswordRequestForm, Depends()],
     db: Annotated[AsyncSession, Depends(db_getter)],
@@ -32,7 +31,6 @@ async def login_for_access_token_controller(
         redis=redis,
         login_form=login_form,
         db=db,
-        background_tasks=background_tasks,
     )
     logger.info(f"用户 {login_form.username} 登录成功")
     if settings.DOCS_URL in request.headers.get("referer", ""):

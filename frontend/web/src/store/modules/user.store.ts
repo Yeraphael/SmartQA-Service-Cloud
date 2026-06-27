@@ -7,14 +7,13 @@ import { useSettingsStore } from "./setting.store";
 import { useWorktabStore } from "./worktab.store";
 import { useMenuStore } from "./menu.store";
 import { useConfigStore } from "./config.store";
-import { AppRouteRecord } from "@/types/router";
 import { Auth, setPageTitle, StorageConfig } from "@utils";
 import AuthAPI from "@/api/module_system/auth";
 import UserAPI from "@/api/module_system/user";
 import type { MenuTable } from "@/types/menu";
 import { ResultEnum } from "@/enums/api/result.enum";
 import { ElNotification } from "element-plus";
-import { store, useDictStore } from "@stores";
+import { store } from "@stores";
 import type { UserInfo } from "@/api/module_system/user";
 
 /** 延迟加载 beforeEach 工具函数，避免 user.store 与 beforeEach 的循环依赖 */
@@ -27,7 +26,7 @@ const getRouterUtils = () => {
 /** {@link useUserStore} 的 `logout` 可选参数 */
 export interface LogoutOptions {
   /**
-   * 为 false 时仅清理状态，不跳转登录（由调用方自行 next/router，如锁屏页 replace）
+   * 为 false 时仅清理状态，不跳转登录（由调用方自行控制跳转）
    * @default true
    */
   navigate?: boolean;
@@ -35,7 +34,7 @@ export interface LogoutOptions {
 
 /**
  * 用户状态管理
- * 管理用户登录状态、个人信息、语言设置、搜索历史、锁屏状态等
+ * 管理用户登录状态、个人信息、语言设置、路由和权限。
  */
 export const useUserStore = defineStore(
   "userStore",
@@ -44,14 +43,8 @@ export const useUserStore = defineStore(
     const language = ref(LanguageEnum.ZH);
     // 登录状态
     const isLogin = ref(false);
-    // 锁屏状态
-    const isLock = ref(false);
-    // 锁屏密码
-    const lockPassword = ref("");
     // 用户信息
     const info = ref<Partial<UserInfo>>({});
-    // 搜索历史记录
-    const searchHistory = ref<AppRouteRecord[]>([]);
     // 访问令牌
     const accessToken = ref("");
     // 刷新令牌
@@ -107,30 +100,6 @@ export const useUserStore = defineStore(
     const setLanguage = (lang: LanguageEnum) => {
       setPageTitle(router.currentRoute.value);
       language.value = lang;
-    };
-
-    /**
-     * 设置搜索历史
-     * @param list 搜索历史列表
-     */
-    const setSearchHistory = (list: AppRouteRecord[]) => {
-      searchHistory.value = list;
-    };
-
-    /**
-     * 设置锁屏状态
-     * @param status 锁屏状态
-     */
-    const setLockStatus = (status: boolean) => {
-      isLock.value = status;
-    };
-
-    /**
-     * 设置锁屏密码
-     * @param password 锁屏密码
-     */
-    const setLockPassword = (password: string) => {
-      lockPassword.value = password;
     };
 
     /**
@@ -323,8 +292,6 @@ export const useUserStore = defineStore(
       routeList.value = [];
       hasGetRoute.value = false;
       isLogin.value = false;
-      isLock.value = false;
-      lockPassword.value = "";
       accessToken.value = "";
       refreshToken.value = "";
       prems.value = [];
@@ -359,7 +326,7 @@ export const useUserStore = defineStore(
     }
 
     /**
-     * 完全重置所有状态（包括路由、标签页、字典等）
+     * 完全重置所有状态（包括路由、标签页等）
      */
     function fullResetAllState() {
       // 重置用户状态
@@ -367,8 +334,6 @@ export const useUserStore = defineStore(
       // 重置用户信息
       clearUserInfo();
       useWorktabStore().clearAll();
-      // 重置字典
-      useDictStore(store).clearDictData();
 
       return Promise.resolve();
     }
@@ -376,10 +341,7 @@ export const useUserStore = defineStore(
     return {
       language,
       isLogin,
-      isLock,
-      lockPassword,
       info,
-      searchHistory,
       accessToken,
       routeList,
       prems,
@@ -396,9 +358,6 @@ export const useUserStore = defineStore(
       setUserInfo,
       setLoginStatus,
       setLanguage,
-      setSearchHistory,
-      setLockStatus,
-      setLockPassword,
       setToken,
       setAvatar,
       setRoute,

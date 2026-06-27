@@ -59,7 +59,7 @@ class QcTaskExecutor:
 
         tasks = []
         for conv in conversations:
-            task_id = f"task_{conv.conversation_id}_{self._short_hash(rule_version)}"
+            task_id = f"task_{conv.id}_{self._short_hash(conv.conversation_id + conv.data_hash + rule_version + version.prompt_version)}"
 
             existing_task_stmt = select(QcTaskModel).where(
                 QcTaskModel.conversation_id == conv.id,

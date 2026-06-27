@@ -5,13 +5,6 @@
  * 权限检查优先级：is_superuser > ROLE_ROOT > userStore.prems > route.meta.authList
  * 如果用户没有对应权限，元素将从 DOM 中移除。
  *
- * ## 使用示例
- *
- * ```vue
- * <el-button v-auth="'smartqa:qc-task:run'">执行质检</el-button>
- * <el-button v-auth="'smartqa:staff-user:reset-password'">重置密码</el-button>
- * ```
- *
  * @module directives/auth
  */
 

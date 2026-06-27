@@ -1,4 +1,4 @@
-"""轻量 Redis 缓存工具（替代 fastapi-cache2，兼容 redis-py）"""
+"""Lightweight Redis cache utility for SmartQA."""
 import hashlib
 import json
 from collections.abc import Callable
@@ -10,11 +10,11 @@ from starlette.responses import Response
 
 _ENABLE: bool = True
 _EXPIRE: int = 300
-_PREFIX: str = "fastapi-admin-cache"
+_PREFIX: str = "smartqa-cache"
 _REDIS: Redis | None = None
 
 
-async def init(redis: Redis, prefix: str = "fastapi-admin-cache", expire: int = 300, enable: bool = True) -> None:
+async def init(redis: Redis, prefix: str = "smartqa-cache", expire: int = 300, enable: bool = True) -> None:
     global _REDIS, _PREFIX, _EXPIRE, _ENABLE
     _REDIS = redis
     _PREFIX = prefix

@@ -68,6 +68,12 @@ const SmartQAAPI = {
       data,
     });
   },
+  syncSchedule() {
+    return request<ApiResponse<SyncSchedule>>({
+      url: `${API_PATH}/sync/schedule`,
+      method: "get",
+    });
+  },
   conversations(params: PageQuery & ConversationQuery) {
     return request<ApiResponse<PageResult<ConversationRow>>>({
       url: `${API_PATH}/conversations/list`,
@@ -98,6 +104,13 @@ const SmartQAAPI = {
   executeTasks(data: { task_ids: number[]; batch_size: number }) {
     return request<ApiResponse<QcTaskExecuteResult[]>>({
       url: `${API_PATH}/qc/tasks/execute`,
+      method: "post",
+      data,
+    });
+  },
+  dailyQcSample(data: { limit: number; execute: boolean; rule_version?: string; model_name?: string }) {
+    return request<ApiResponse<QcDailySampleResult>>({
+      url: `${API_PATH}/qc/tasks/daily-sample`,
       method: "post",
       data,
     });
@@ -222,6 +235,10 @@ export interface SmartQAHealth {
   ali_model_name: string;
   qc_task_concurrency: number;
   sync_overlap_minutes: number;
+  scheduler_enabled: boolean;
+  source_sync_times: string;
+  daily_qc_time: string;
+  daily_qc_sample_limit: number;
 }
 
 export interface DashboardOverview {
@@ -335,6 +352,17 @@ export interface SyncResult {
   seed_result: Record<string, unknown>;
 }
 
+export interface SyncSchedule {
+  scheduler_enabled: boolean;
+  scheduler_running: boolean;
+  timezone: string;
+  source_sync_times: string;
+  daily_qc_time: string;
+  daily_qc_sample_limit: number;
+  daily_qc_execute: boolean;
+  jobs: Array<{ id: string; name: string; next_run_time?: string }>;
+}
+
 export interface ConversationQuery {
   keyword?: string;
   shop_id?: number;
@@ -401,6 +429,31 @@ export interface QcTaskExecuteResult {
   status: string;
   result?: Record<string, unknown>;
   error?: string;
+}
+
+export interface QcDailySampleResult {
+  limit: number;
+  execute: boolean;
+  selected_count: number;
+  staff_count: number;
+  covered_staff_count: number;
+  expanded_for_staff_coverage: boolean;
+  conversation_ids: number[];
+  staff_ids: number[];
+  create_result: {
+    created: number;
+    skipped: number;
+    selected: number;
+    task_ids: number[];
+    model_name: string;
+    rule_version: string;
+    prompt_version: string;
+  };
+  execute_result?: {
+    success: number;
+    failed: number;
+    results: QcTaskExecuteResult[];
+  };
 }
 
 export interface QcResultQuery {

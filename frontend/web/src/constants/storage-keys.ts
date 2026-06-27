@@ -2,16 +2,11 @@ export const ACCESS_TOKEN_KEY = "access_token";
 export const REFRESH_TOKEN_KEY = "refresh_token";
 export const REMEMBER_ME_KEY = "remember_me";
 
-export const DICT_CACHE_KEY = "dict_cache";
-
 export const SHOW_TAGS_VIEW_KEY = "showTagsView";
 export const SHOW_APP_LOGO_KEY = "showAppLogo";
 export const SHOW_SETTINGS_KEY = "showSettings";
-export const SHOW_MENU_SEARCH_KEY = "showMenuSearch";
 export const SHOW_FULLSCREEN_KEY = "showFullscreen";
-export const SHOW_SIZE_SELECT_KEY = "showSizeSelect";
 export const SHOW_LANG_SELECT_KEY = "showLangSelect";
-export const SHOW_GUIDE_KEY = "showGuide";
 export const LAYOUT_KEY = "layout";
 export const SIDEBAR_COLOR_SCHEME_KEY = "sidebarColorScheme";
 export const THEME_KEY = "theme";
@@ -27,19 +22,12 @@ export const AUTH_KEYS = {
   REMEMBER_ME: REMEMBER_ME_KEY,
 } as const;
 
-export const CACHE_KEYS = {
-  DICT_CACHE: DICT_CACHE_KEY,
-} as const;
-
 export const SETTINGS_KEYS = {
   SHOW_TAGS_VIEW: SHOW_TAGS_VIEW_KEY,
   SHOW_APP_LOGO: SHOW_APP_LOGO_KEY,
   SHOW_SETTINGS: SHOW_SETTINGS_KEY,
-  SHOW_MENU_SEARCH: SHOW_MENU_SEARCH_KEY,
   SHOW_FULLSCREEN: SHOW_FULLSCREEN_KEY,
-  SHOW_SIZE_SELECT: SHOW_SIZE_SELECT_KEY,
   SHOW_LANG_SELECT: SHOW_LANG_SELECT_KEY,
-  SHOW_GUIDE: SHOW_GUIDE_KEY,
   SIDEBAR_COLOR_SCHEME: SIDEBAR_COLOR_SCHEME_KEY,
   LAYOUT: LAYOUT_KEY,
   THEME_COLOR: THEME_COLOR_KEY,
@@ -50,6 +38,5 @@ export const SETTINGS_KEYS = {
 
 export const ALL_STORAGE_KEYS = {
   ...AUTH_KEYS,
-  ...CACHE_KEYS,
   ...SETTINGS_KEYS,
 } as const;

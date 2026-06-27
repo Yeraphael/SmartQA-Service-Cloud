@@ -10,7 +10,6 @@
     "avatar": "",
     "is_superuser": false,
     "last_login": null,
-    "dept_id": null,
     "status": 0,
     "description": "SmartQA 初始老板账号",
     "created_id": null,

@@ -11,12 +11,8 @@
     version: string;
     /** 鏄惁鏄剧ず璁剧疆鎸夐挳 */
     showSettings: boolean;
-    /** 鏄惁鏄剧ず鑿滃崟鎼滅储 */
-    showMenuSearch: boolean;
     /** 鏄惁鏄剧ず鍏ㄥ睆鍒囨崲 */
     showFullscreen: boolean;
-    /** 鏄惁鏄剧ず甯冨眬澶у皬 */
-    showSizeSelect: boolean;
     /** 鏄惁鏄剧ず璇█閫夋嫨 */
     showLangSelect: boolean;
     /** 鏄惁鏄剧ず閫氱煡 */
@@ -38,10 +34,6 @@
     /** 姘村嵃鍐呭 */
     /** 渚ц竟鏍忛厤鑹叉柟妗?*/
     sidebarColorScheme: "classic-blue" | "minimal-white";
-    /** 椤圭洰寮曞 */
-    guideVisible: boolean;
-    /** 鏄惁鍚姩寮曞 */
-    showGuide: boolean;
     /** 鏄惁寮€鍚疉I鍔╂墜 */
     /** 鏄惁寮€鍚伆鑹叉ā寮?*/
     grayMode: boolean;

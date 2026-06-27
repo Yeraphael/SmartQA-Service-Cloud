@@ -23,44 +23,15 @@
       </div>
     </main>
 
-    <!-- 全局浮层层（引导、通知等跨页面组件） -->
-    <div id="app-global">
-      <FaGlobalComponent />
-      <FaGuide v-if="guideVisible" v-model="guideVisible" @skip="onGuideFinished" />
-    </div>
+    <!-- 全局浮层层（通知等跨页面组件） -->
   </div>
 </template>
 
 <script setup lang="ts">
 /**
  * 布局根组件 —— 组装侧栏、顶栏、页面内容、全局浮层。
- *
- * 依赖：
- *   appStore.guideVisible    ← 控制新手指引显隐（session 级状态）
- *   settingStore.showGuide   ← 用户是否关闭指引（持久化）
- *
- * 流程：
- *   首次访问 → guideVisible=true → 用户完成/跳过指引 → onGuideFinished()
- *   → settingStore.showGuide=false → 后续不再显示
  */
-import { computed } from "vue";
-import { useAppStore, useSettingsStore } from "@stores";
-
 defineOptions({ name: "AppLayout" });
-
-const appStore = useAppStore();
-const settingStore = useSettingsStore();
-
-/** 新手指引显隐 —— session 级状态，首次登录/注册后自动弹出 */
-const guideVisible = computed({
-  get: () => appStore.guideVisible,
-  set: (v: boolean) => appStore.showGuide(v),
-});
-
-/** 指引完成后持久化标记「不再显示」 */
-function onGuideFinished(): void {
-  settingStore.updateSetting("showGuide", false);
-}
 </script>
 
 <style lang="scss" scoped>

@@ -10,7 +10,6 @@ from pydantic import (
 )
 
 from app.api.v1.module_platform.menu.schema import MenuOutSchema
-from app.api.v1.module_system.dept.schema import DeptOutSchema
 from app.common.enums import QueueEnum
 from app.core.base_params import BaseQueryParam, TenantByQueryParam, UserByQueryParam
 from app.core.base_schema import BaseSchema, TenantBySchema, UserBySchema
@@ -31,8 +30,8 @@ class RoleCreateSchema(BaseModel):
     data_scope: int | None = Field(
         default=1,
         ge=1,
-        le=5,
-        description="数据权限范围(1:仅本人 2:本部门 3:本部门及以下 4:全部 5:自定义)",
+        le=4,
+        description="数据权限范围(1:仅本人 4:全部)",
     )
     status: int = Field(default=0, ge=0, le=1, description="状态(0:启动 1:停用)")
     description: str | None = Field(default=None, max_length=255, description="描述")
@@ -69,12 +68,11 @@ class RolePermissionSettingSchema(BaseModel):
     data_scope: int = Field(
         default=1,
         ge=1,
-        le=5,
-        description="数据权限范围(1:仅本人 2:本部门 3:本部门及以下 4:全部 5:自定义)",
+        le=4,
+        description="数据权限范围(1:仅本人 4:全部)",
     )
     role_ids: list[int] = Field(default_factory=list, description="角色ID列表")
     menu_ids: list[int] = Field(default_factory=list, description="菜单ID列表")
-    dept_ids: list[int] = Field(default_factory=list, description="部门ID列表")
 
     @model_validator(mode="after")
     def validate_fields(self):
@@ -101,7 +99,6 @@ class RoleOutSchema(RoleCreateSchema, BaseSchema, UserBySchema, TenantBySchema):
     model_config = ConfigDict(from_attributes=True)
 
     menus: list[MenuOutSchema] = Field(default_factory=list, description="角色菜单列表")
-    depts: list[DeptOutSchema] = Field(default_factory=list, description="角色部门列表")
 
 
 @dataclass

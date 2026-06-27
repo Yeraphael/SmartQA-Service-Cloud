@@ -6,12 +6,14 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.common.response import ResponseSchema, SuccessResponse
+from app.config.setting import settings
 from app.core.base_schema import AuthSchema
+from app.core.ap_scheduler import SchedulerUtil
 from app.core.dependencies import AuthPermission, db_getter
 from app.plugin.module_smartqa.common.access import ensure_smartqa_boss
 
 from .db_sync_service import SourceDbSyncService
-from .schema import QianniuBatchSchema, QianniuSyncDbSchema, QianniuSyncResultSchema
+from .schema import QianniuBatchSchema, QianniuSyncDbSchema, QianniuSyncResultSchema, QianniuSyncScheduleSchema
 from .service import QianniuSyncService
 
 router = APIRouter(prefix="/sync", tags=["SmartQA - Qianniu Sync"])
@@ -28,6 +30,23 @@ async def sync_from_source_db(
     service = SourceDbSyncService(auth=auth)
     result = await service.full_sync(session, build=data.build, seed=data.seed, truncate_dwd=data.truncate_dwd)
     return SuccessResponse(data=QianniuSyncResultSchema.model_validate(result), msg="Source database sync succeeded")
+
+
+@router.get("/schedule", summary="Get SmartQA sync schedule", response_model=ResponseSchema[QianniuSyncScheduleSchema])
+async def get_sync_schedule(auth: AuthSchema = Depends(AuthPermission())):
+    """Return configured source sync and daily QC schedule."""
+    await ensure_smartqa_boss(auth)
+    data = QianniuSyncScheduleSchema(
+        scheduler_enabled=settings.SCHEDULER_ENABLE,
+        scheduler_running=SchedulerUtil.is_running(),
+        timezone=settings.SMARTQA_SCHEDULER_TIMEZONE,
+        source_sync_times=settings.SMARTQA_SOURCE_SYNC_TIMES,
+        daily_qc_time=settings.SMARTQA_DAILY_QC_TIME,
+        daily_qc_sample_limit=settings.SMARTQA_DAILY_QC_SAMPLE_LIMIT,
+        daily_qc_execute=settings.SMARTQA_DAILY_QC_EXECUTE,
+        jobs=SchedulerUtil.get_jobs(),
+    )
+    return SuccessResponse(data=data, msg="Query succeeded")
 
 
 @router.get("/batches", summary="List sync batches", response_model=ResponseSchema[list[QianniuBatchSchema]])

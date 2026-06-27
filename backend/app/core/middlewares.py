@@ -36,7 +36,7 @@ def _strip_bearer(authorization: str) -> str | None:
 # 中间件配置的「安全默认值」：Redis 不可用 / 解析异常时启用，确保中间件行为可预测。
 # 使用 MappingProxyType 防止任何地方误改导致跨请求污染。
 _DEFAULT_CONFIG: MappingProxyType = MappingProxyType({
-    "demo_enable": False,
+    "write_guard_enable": False,
     "ip_white_list": (),
     "ip_black_list": (),
     "white_api_list_path": (),
@@ -55,8 +55,8 @@ class CustomCORSMiddleware(CORSMiddleware):
         )
 
 
-class RequestLogMiddleware(BaseHTTPMiddleware):
-    """请求日志 & 演示模式拦截"""
+class RequestGuardMiddleware(BaseHTTPMiddleware):
+    """Request guard for IP blacklist and write protection."""
 
     def __init__(self, app: ASGIApp) -> None:
         super().__init__(app)
@@ -90,21 +90,21 @@ class RequestLogMiddleware(BaseHTTPMiddleware):
             path = request.url.path
             config = await self._load_config(request)
             is_blacklisted = bool(client_ip and client_ip in config["ip_black_list"])
-            in_demo = (
-                config["demo_enable"]
+            write_blocked = (
+                config["write_guard_enable"]
                 and request.method != "GET"
                 and (client_ip is None or client_ip not in config["ip_white_list"])
                 and not _is_path_whitelisted(path, config["white_api_list_path"])
             )
 
-            if is_blacklisted or in_demo:
+            if is_blacklisted or write_blocked:
                 logger.warning(
                     "请求被拦截: {} {} | ip={} | 原因={}",
                     request.method, path, client_ip,
-                    "IP黑名单" if is_blacklisted else "演示模式",
+                    "IP黑名单" if is_blacklisted else "写保护",
                 )
                 return ErrorResponse(
-                    msg="IP已被黑名单" if is_blacklisted else "演示环境，禁止操作"
+                    msg="IP已被黑名单" if is_blacklisted else "当前环境已开启写保护"
                 )
 
             response = await call_next(request)

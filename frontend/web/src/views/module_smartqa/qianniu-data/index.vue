@@ -3,12 +3,12 @@
     <div class="smartqa-toolbar">
       <div>
         <h2>千牛数据</h2>
-        <span>精确同步数以源库 COUNT(*) 为准</span>
+        <span>{{ scheduleText }}</span>
       </div>
       <div class="toolbar-actions">
         <ElCheckbox v-model="truncateDwd">重建明细</ElCheckbox>
         <ElButton :loading="syncing" type="primary" icon="RefreshRight" @click="syncSource">
-          源库同步
+          立即同步
         </ElButton>
         <ElButton :loading="loading" icon="Refresh" @click="loadData">刷新</ElButton>
       </div>
@@ -22,6 +22,18 @@
         </ElCard>
       </ElCol>
     </ElRow>
+
+    <ElCard shadow="never" class="schedule-card">
+      <ElDescriptions :column="3" border>
+        <ElDescriptionsItem label="自动同步">{{ schedule?.source_sync_times || "-" }}</ElDescriptionsItem>
+        <ElDescriptionsItem label="每日质检">{{ schedule?.daily_qc_time || "-" }}</ElDescriptionsItem>
+        <ElDescriptionsItem label="调度状态">
+          <ElTag :type="schedule?.scheduler_running ? 'success' : 'info'">
+            {{ schedule?.scheduler_running ? "运行中" : "未运行" }}
+          </ElTag>
+        </ElDescriptionsItem>
+      </ElDescriptions>
+    </ElCard>
 
     <ElCard shadow="never">
       <ElTable :loading="loading" :data="batches" row-key="id" height="520">
@@ -56,12 +68,13 @@
 <script setup lang="ts">
 import { ElMessageBox } from "element-plus";
 import { computed, onMounted, ref } from "vue";
-import SmartQAAPI, { type ImportBatch, type QianniuSummary } from "@/api/module_smartqa";
+import SmartQAAPI, { type ImportBatch, type QianniuSummary, type SyncSchedule } from "@/api/module_smartqa";
 
 const loading = ref(false);
 const syncing = ref(false);
 const truncateDwd = ref(false);
 const summary = ref<QianniuSummary>();
+const schedule = ref<SyncSchedule>();
 const batches = ref<ImportBatch[]>([]);
 const total = ref(0);
 const pageNo = ref(1);
@@ -76,6 +89,11 @@ const metrics = computed(() => [
   { label: "最新状态", value: summary.value?.latest_status || "-" },
 ]);
 
+const scheduleText = computed(() => {
+  const times = schedule.value?.source_sync_times || "07:30,12:30,20:30";
+  return `源库自动同步 ${times}`;
+});
+
 async function loadBatches() {
   const res = await SmartQAAPI.batches({ page_no: pageNo.value, page_size: pageSize.value });
   batches.value = res.data.data?.items || [];
@@ -85,8 +103,9 @@ async function loadBatches() {
 async function loadData() {
   loading.value = true;
   try {
-    const [summaryRes] = await Promise.all([SmartQAAPI.batchSummary(), loadBatches()]);
+    const [summaryRes, scheduleRes] = await Promise.all([SmartQAAPI.batchSummary(), SmartQAAPI.syncSchedule(), loadBatches()]);
     summary.value = summaryRes.data.data;
+    schedule.value = scheduleRes.data.data;
   } finally {
     loading.value = false;
   }
@@ -158,6 +177,10 @@ onMounted(loadData);
   margin-top: 8px;
   font-size: 22px;
   font-weight: 700;
+}
+
+.schedule-card :deep(.el-descriptions__label) {
+  width: 110px;
 }
 
 .pager {

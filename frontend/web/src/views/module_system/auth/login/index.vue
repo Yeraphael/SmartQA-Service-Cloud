@@ -51,7 +51,7 @@
                       :rules="rules"
                       :captcha-state="captchaState"
                       :code-loading="codeLoading"
-                      :demo-account-key="demoAccountKey"
+                      :portal-account-key="portalAccountKey"
                       :accounts="accounts"
                       :form-key="formKey"
                       :is-dark="isDark"
@@ -149,7 +149,7 @@ import AuthAPI, {
   type LoginFormData,
 } from "@/api/module_system/auth";
 import UserAPI, { type ForgetPasswordForm } from "@/api/module_system/user";
-import { useConfigStore, useAppStore, useSettingsStore, useUserStore } from "@stores";
+import { useConfigStore, useSettingsStore, useUserStore } from "@stores";
 import { HttpError } from "@utils";
 import { ElNotification, type FormRules } from "element-plus";
 import type { Account, AccountKey } from "./types";
@@ -164,7 +164,6 @@ type AuthPanel = "login" | "forget";
 
 const configStore = useConfigStore();
 const settingStore = useSettingsStore();
-const appStore = useAppStore();
 const { isDark } = storeToRefs(settingStore);
 const { t, locale } = useI18n();
 
@@ -225,7 +224,7 @@ const accounts = computed<Account[]>(() => [
   },
 ]);
 
-const demoAccountKey = ref<AccountKey>("boss");
+const portalAccountKey = ref<AccountKey>("boss");
 const userStore = useUserStore();
 const router = useRouter();
 const route = useRoute();
@@ -321,7 +320,7 @@ const rules = computed<FormRules>(() => {
 
 function setupAccount(key: AccountKey) {
   const selected = accounts.value.find((a: Account) => a.key === key);
-  demoAccountKey.value = key;
+  portalAccountKey.value = key;
   loginForm.username = selected?.username ?? "";
   loginForm.password = selected?.password ?? "";
 }
@@ -401,10 +400,6 @@ const handleSubmit = async () => {
 
     await userStore.login(loginForm);
     await router.replace(resolveRedirectTarget(route.query));
-
-    if (settingStore.showGuide) {
-      appStore.showGuide(true);
-    }
   } catch (error) {
     await getCaptcha();
     if (!(error instanceof HttpError)) {

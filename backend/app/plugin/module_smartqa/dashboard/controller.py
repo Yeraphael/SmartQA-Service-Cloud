@@ -6,11 +6,11 @@ from fastapi.responses import JSONResponse
 from app.common.response import ResponseSchema, SuccessResponse
 from app.core.base_schema import AuthSchema
 from app.core.dependencies import AuthPermission
-from app.core.router_class import OperationLogRoute
+from app.core.router_class import SmartQARoute
 
 from .service import DashboardService
 
-DashboardRouter = APIRouter(route_class=OperationLogRoute, prefix="/dashboard", tags=["SmartQA", "看板"])
+DashboardRouter = APIRouter(route_class=SmartQARoute, prefix="/dashboard", tags=["SmartQA", "看板"])
 router = DashboardRouter  # Alias for router import
 
 

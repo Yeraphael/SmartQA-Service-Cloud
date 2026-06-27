@@ -1,19 +1,6 @@
 <!-- 布局内容 -->
 <template>
   <div id="app-scroll-main" class="layout-content" :style="containerStyle">
-    <div id="app-content-header">
-      <!-- 节日滚动 -->
-      <FaFestivalTextScroll />
-
-      <!-- 路由信息调试 -->
-      <div
-        v-if="isOpenRouteInfo === 'true'"
-        class="px-2 py-1.5 mb-3 text-sm text-g-500 bg-g-200 border border-[var(--default-border)] rounded-md"
-      >
-        router meta：{{ route.meta }}
-      </div>
-    </div>
-
     <RouterView v-if="isRefresh" v-slot="{ Component, route: router }" :style="contentStyle">
       <Transition :name="actualTransition" mode="out-in">
         <div v-if="Component" class="route-view-shell flex min-h-0 min-w-0 w-full flex-1 flex-col">
@@ -104,7 +91,6 @@ const keepAliveInclude = computed(() => {
 });
 
 const isRefresh = shallowRef(true);
-const isOpenRouteInfo = import.meta.env.VITE_OPEN_ROUTE_INFO;
 
 /** 浏览器首次进入：关闭路由过渡动画，避免首屏闪动 */
 const isFirstLoad = ref(true);

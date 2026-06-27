@@ -1,16 +1,16 @@
 from datetime import datetime
-from sqlalchemy import DateTime, ForeignKey, Integer, SmallInteger, String, Text, UniqueConstraint
+from sqlalchemy import DateTime, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, validates
 
 from app.common.enums import PermissionFilterStrategy
-from app.core.base_model import MappedBase, ModelMixin
+from app.core.base_model import ModelMixin
 
 
 class TenantModel(ModelMixin):
     """
     单租户底座模型。
 
-    SmartQA P0 不提供套餐、订单、插件商城或多租户售卖能力。
+    SmartQA P0 为单业务产品形态。
     该表仅保留登录上下文和基础站点配置所需字段。
     """
 
@@ -54,25 +54,3 @@ class TenantModel(ModelMixin):
         if not code.isalnum():
             raise ValueError("编码只能包含字母和数字")
         return code
-
-
-class TenantUserModel(MappedBase):
-    """
-    用户-租户关联表
-
-    支持一个用户关联多个租户（如顾问在多个租户间切换）。
-    每个用户有一个默认租户（is_default=1），用于登录后的默认上下文。
-    """
-
-    __tablename__: str = "platform_user_tenant"
-    __table_args__ = (
-        UniqueConstraint("user_id", "tenant_id", name="uq_user_tenant"),
-        {"comment": "用户租户关联表"},
-    )
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True, comment="主键ID")
-    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("sys_user.id", ondelete="CASCADE", onupdate="CASCADE"), nullable=False, index=True, comment="用户ID")
-    tenant_id: Mapped[int] = mapped_column(Integer, ForeignKey("platform_tenant.id", ondelete="CASCADE", onupdate="CASCADE"), nullable=False, index=True, comment="租户ID")
-    role: Mapped[str] = mapped_column(String(20), nullable=False, default="member", comment="租户内角色(owner:拥有者 admin:管理员 member:成员)")
-    is_default: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=0, comment="是否默认租户(0:否 1:是)")
-    create_time: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, nullable=False, comment="创建时间")

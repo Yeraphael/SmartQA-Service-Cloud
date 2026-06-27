@@ -8,11 +8,8 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.module_platform.menu.model import MenuModel
-from app.api.v1.module_platform.tenant.model import TenantModel, TenantUserModel
-from app.api.v1.module_system.dept.model import DeptModel
-from app.api.v1.module_system.dict.model import DictDataModel, DictTypeModel
+from app.api.v1.module_platform.tenant.model import TenantModel
 from app.api.v1.module_system.params.model import ParamsModel
-from app.api.v1.module_system.position.model import PositionModel
 from app.api.v1.module_system.role.model import RoleMenusModel, RoleModel
 from app.api.v1.module_system.user.model import UserModel, UserRolesModel
 from app.config.path_conf import SCRIPT_DIR
@@ -59,14 +56,9 @@ class InitializeData:
         TenantModel,
         MenuModel,
         ParamsModel,
-        DeptModel,
         RoleModel,
-        DictTypeModel,
-        DictDataModel,
-        PositionModel,
         UserModel,
         UserRolesModel,
-        TenantUserModel,
         OdsImportBatchModel,
         OdsQnChatRecordModel,
         OdsQnShopRecordModel,
@@ -89,7 +81,7 @@ class InitializeData:
         ModelCallLogModel,
     ]
 
-    _RECURSIVE_TABLES: set[str] = {"platform_menu", "sys_dept"}
+    _RECURSIVE_TABLES: set[str] = {"platform_menu"}
 
     async def init_db(self) -> None:
         try:
@@ -103,8 +95,6 @@ class InitializeData:
                 await self.__init_data(session)
 
     async def __init_data(self, db: AsyncSession) -> None:
-        dict_type_mapping: dict[str, Any] = {}
-
         for model in self.prepare_init_models:
             table_name = model.__tablename__
             data = await self.__load_json(table_name)
@@ -122,31 +112,6 @@ class InitializeData:
                     db.add_all(self.__create_objects_with_children(data, model))
                     await db.flush()
                     logger.info(f"seeded {table_name}")
-                    continue
-
-                if table_name == "sys_dict_type":
-                    objs = []
-                    for item in data:
-                        obj = model(**item)
-                        objs.append(obj)
-                        dict_type_mapping[item["dict_type"]] = obj
-                    db.add_all(objs)
-                    await db.flush()
-                    logger.info("seeded sys_dict_type")
-                    continue
-
-                if table_name == "sys_dict_data":
-                    objs = []
-                    for item in data:
-                        dict_type_str = item.get("dict_type")
-                        if dict_type_str not in dict_type_mapping:
-                            logger.warning(f"skip dict data without type: {dict_type_str}")
-                            continue
-                        item["dict_type_id"] = dict_type_mapping[dict_type_str].id
-                        objs.append(model(**item))
-                    db.add_all(objs)
-                    await db.flush()
-                    logger.info("seeded sys_dict_data")
                     continue
 
                 db.add_all([model(**item) for item in data])

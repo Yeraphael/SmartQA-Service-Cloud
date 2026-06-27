@@ -3,12 +3,12 @@ from fastapi.responses import JSONResponse
 
 from app.common.response import ResponseSchema, SuccessResponse
 from app.config.setting import settings
-from app.core.router_class import OperationLogRoute
+from app.core.router_class import SmartQARoute
 
 from .schema import SmartQAHealthSchema
 
 SmartQAHealthRouter = APIRouter(
-    route_class=OperationLogRoute,
+    route_class=SmartQARoute,
     prefix="/health",
     tags=["SmartQA", "健康检查"],
 )
@@ -29,5 +29,9 @@ async def get_smartqa_health_controller() -> JSONResponse:
         qc_task_concurrency=settings.SMARTQA_QC_TASK_CONCURRENCY,
         sync_overlap_minutes=settings.SMARTQA_SYNC_OVERLAP_MINUTES,
         shop_record_rolling_days=settings.SMARTQA_SHOP_RECORD_ROLLING_DAYS,
+        scheduler_enabled=settings.SCHEDULER_ENABLE,
+        source_sync_times=settings.SMARTQA_SOURCE_SYNC_TIMES,
+        daily_qc_time=settings.SMARTQA_DAILY_QC_TIME,
+        daily_qc_sample_limit=settings.SMARTQA_DAILY_QC_SAMPLE_LIMIT,
     )
     return SuccessResponse(data=data, msg="SmartQA 服务正常")

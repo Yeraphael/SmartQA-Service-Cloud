@@ -63,15 +63,9 @@ export interface UserInfo extends BaseType {
   gender?: string;
   password?: string;
   menus?: MenuTable[];
-  dept?: deptTreeType;
-  dept_id?: deptTreeType["id"];
-  dept_name?: deptTreeType["name"];
   roles?: roleSelectorType[];
   role_names?: roleSelectorType["name"][];
   role_ids?: roleSelectorType["id"][];
-  positions?: positionSelectorType[];
-  position_names?: positionSelectorType["name"][];
-  position_ids?: positionSelectorType["id"][];
   is_superuser?: boolean;
   last_login?: string;
   created_by?: CommonType;
@@ -79,13 +73,6 @@ export interface UserInfo extends BaseType {
   deleted_by?: CommonType;
   status?: number;
   description?: string;
-}
-
-export interface deptTreeType {
-  id?: number;
-  name?: string;
-  parent_id?: number;
-  children?: deptTreeType[];
 }
 
 export interface roleSelectorType {
@@ -97,13 +84,6 @@ export interface roleSelectorType {
   menus?: MenuForm[];
 }
 
-export interface positionSelectorType {
-  id?: number;
-  name?: string;
-  status?: number;
-  description?: string;
-}
-
 export interface InfoFormState {
   id?: number;
   name?: string;
@@ -111,9 +91,6 @@ export interface InfoFormState {
   mobile?: string;
   email?: string;
   username?: string;
-  dept_name?: string;
-  dept?: deptTreeType;
-  positions?: positionSelectorType[];
   roles?: roleSelectorType[];
   avatar?: string;
   created_time?: string;

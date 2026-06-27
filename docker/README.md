@@ -1,6 +1,6 @@
 # SmartQA Service Cloud 部署说明
 
-> **与仓库根文档的关系**：项目总览、快速开始、演示账号等请以 [根目录 README.md](../README.md) 为准；**本文档**侧重 Docker 部署的详细操作。
+> **与仓库根文档的关系**：项目总览、快速开始、初始账号等请以 [根目录 README.md](../README.md) 为准；**本文档**侧重 Docker 部署的详细操作。
 
 ## 项目结构
 
@@ -24,9 +24,9 @@ docker/
 │   │   └── redis.conf      # Redis 持久化配置文件
 │   └── data/               # Redis 数据文件（自动生成）
 ├── docker-compose.yaml     # Docker Compose 编排文件
-├── docker-compose-example.yaml  # 编排文件示例
+├── docker-compose-example.yaml  # 编排参考配置
 ├── .env                    # 环境变量配置文件（.gitignore 已排除）
-├── .env.example            # 环境变量示例文件
+├── .env.example            # 环境变量参考配置
 ├── env.sh                  # 环境变量加载脚本
 └── README.md               # 本文档
 ```

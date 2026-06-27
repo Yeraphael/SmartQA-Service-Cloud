@@ -5,7 +5,9 @@ Examples:
   python scripts/smartqa_pipeline.py sync --truncate-dwd
   python scripts/smartqa_pipeline.py seed
   python scripts/smartqa_pipeline.py create-tasks --limit 10
+  python scripts/smartqa_pipeline.py daily-qc --limit 100
   python scripts/smartqa_pipeline.py run-ai --limit 1
+  python scripts/smartqa_pipeline.py prune-db
   python scripts/smartqa_pipeline.py verify
 """
 
@@ -45,10 +47,15 @@ def main() -> None:
     build_parser.add_argument("--truncate-dwd", action="store_true", help="clear DIM/DWD/QC before rebuild")
 
     sub.add_parser("seed")
+    sub.add_parser("prune-db")
 
     task_parser = sub.add_parser("create-tasks")
     task_parser.add_argument("--limit", type=int, default=10)
     task_parser.add_argument("--all", action="store_true", help="create tasks for all conversations")
+
+    daily_parser = sub.add_parser("daily-qc")
+    daily_parser.add_argument("--limit", type=int, default=100)
+    daily_parser.add_argument("--execute", action="store_true", help="call Ali model immediately")
 
     ai_parser = sub.add_parser("run-ai")
     ai_parser.add_argument("--limit", type=int, default=1)
@@ -71,8 +78,12 @@ def main() -> None:
         print_json({"build": pipeline.rebuild_warehouse(truncate_dwd=args.truncate_dwd), "target": pipeline.target_counts()})
     elif args.command == "seed":
         print_json({"seed": pipeline.seed_defaults(), "target": pipeline.target_counts()})
+    elif args.command == "prune-db":
+        print_json({"prune": pipeline.prune_retired_tables(), "target": pipeline.target_counts()})
     elif args.command == "create-tasks":
         print_json(pipeline.create_qc_tasks(limit=None if args.all else args.limit))
+    elif args.command == "daily-qc":
+        print_json(pipeline.run_daily_qc_sample(limit=args.limit, execute=args.execute))
     elif args.command == "run-ai":
         print_json(pipeline.execute_qc_tasks(limit=args.limit))
     elif args.command == "verify":

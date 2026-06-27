@@ -12,7 +12,6 @@ import { SETTINGS_KEYS } from "@/constants";
 import {
   StorageConfig,
   applyTheme,
-  formatToDate,
   generateThemeColors,
   setElementThemeColor,
   toggleDarkMode,
@@ -33,27 +32,22 @@ export const useSettingsStore = defineStore(
     const systemThemeColor = ref(SETTING_DEFAULT_CONFIG.systemThemeColor);
 
     const showMenuButton = ref(SETTING_DEFAULT_CONFIG.showMenuButton);
-    const showFastEnter = ref(SETTING_DEFAULT_CONFIG.showFastEnter);
     const showRefreshButton = ref(SETTING_DEFAULT_CONFIG.showRefreshButton);
     const showCrumbs = ref(SETTING_DEFAULT_CONFIG.showCrumbs);
     const showWorkTab = ref(SETTING_DEFAULT_CONFIG.showWorkTab);
     const showLanguage = ref(SETTING_DEFAULT_CONFIG.showLanguage);
     const showNprogress = ref(SETTING_DEFAULT_CONFIG.showNprogress);
-    const showSettingGuide = ref(SETTING_DEFAULT_CONFIG.showSettingGuide);
-    const showFestivalText = ref(SETTING_DEFAULT_CONFIG.showFestivalText);
 
     const autoClose = ref(SETTING_DEFAULT_CONFIG.autoClose);
     const uniqueOpened = ref(SETTING_DEFAULT_CONFIG.uniqueOpened);
     const colorWeak = ref(SETTING_DEFAULT_CONFIG.colorWeak);
     const refresh = ref(SETTING_DEFAULT_CONFIG.refresh);
-    const holidayFireworksLoaded = ref(SETTING_DEFAULT_CONFIG.holidayFireworksLoaded);
 
     const boxBorderMode = ref(SETTING_DEFAULT_CONFIG.boxBorderMode);
     const pageTransition = ref(SETTING_DEFAULT_CONFIG.pageTransition);
     const tabStyle = ref(SETTING_DEFAULT_CONFIG.tabStyle);
     const customRadius = ref(SETTING_DEFAULT_CONFIG.customRadius);
     const containerWidth = ref(SETTING_DEFAULT_CONFIG.containerWidth);
-    const festivalDate = ref(SETTING_DEFAULT_CONFIG.festivalDate);
 
     const settingsVisible = ref(false);
 
@@ -69,18 +63,9 @@ export const useSettingsStore = defineStore(
       SETTINGS_KEYS.SHOW_SETTINGS,
       defaultSettings.showSettings
     );
-    const showGuide = useStorage<boolean>(SETTINGS_KEYS.SHOW_GUIDE, defaultSettings.showGuide);
-    const showMenuSearch = useStorage<boolean>(
-      SETTINGS_KEYS.SHOW_MENU_SEARCH,
-      defaultSettings.showMenuSearch
-    );
     const showFullscreen = useStorage<boolean>(
       SETTINGS_KEYS.SHOW_FULLSCREEN,
       defaultSettings.showFullscreen
-    );
-    const showSizeSelect = useStorage<boolean>(
-      SETTINGS_KEYS.SHOW_SIZE_SELECT,
-      defaultSettings.showSizeSelect
     );
     const showLangSelect = useStorage<boolean>(
       SETTINGS_KEYS.SHOW_LANG_SELECT,
@@ -113,16 +98,12 @@ export const useSettingsStore = defineStore(
     const isDark = computed(() => systemThemeType.value === SystemThemeEnum.DARK);
     const getMenuOpenWidth = computed(() => `${menuOpenWidth.value}px`);
     const getCustomRadius = computed(() => `${customRadius.value}rem`);
-    const isShowFireworks = computed(() => festivalDate.value !== formatToDate(new Date()));
 
     const settingsMap = {
       showTagsView,
       showAppLogo,
       showSettings,
-      showGuide,
-      showMenuSearch,
       showFullscreen,
-      showSizeSelect,
       showLangSelect,
       sidebarColorScheme,
       layout,
@@ -187,9 +168,6 @@ export const useSettingsStore = defineStore(
     const setButton = () => {
       showMenuButton.value = !showMenuButton.value;
     };
-    const setFastEnter = () => {
-      showFastEnter.value = !showFastEnter.value;
-    };
     const setAutoClose = () => {
       autoClose.value = !autoClose.value;
     };
@@ -211,12 +189,6 @@ export const useSettingsStore = defineStore(
     const setColorWeak = () => {
       colorWeak.value = !colorWeak.value;
     };
-    const hideSettingGuide = () => {
-      showSettingGuide.value = false;
-    };
-    const openSettingGuide = () => {
-      showSettingGuide.value = true;
-    };
     const setPageTransition = (transition: string) => {
       pageTransition.value = transition;
     };
@@ -232,15 +204,6 @@ export const useSettingsStore = defineStore(
     const setCustomRadius = (radius: string) => {
       customRadius.value = radius;
       document.documentElement.style.setProperty("--custom-radius", `${radius}rem`);
-    };
-    const setholidayFireworksLoaded = (isLoad: boolean) => {
-      holidayFireworksLoaded.value = isLoad;
-    };
-    const setShowFestivalText = (show: boolean) => {
-      showFestivalText.value = show;
-    };
-    const setFestivalDate = (date: string) => {
-      festivalDate.value = date;
     };
     const setDualMenuShowText = (show: boolean) => {
       dualMenuShowText.value = show;
@@ -283,10 +246,7 @@ export const useSettingsStore = defineStore(
       showTagsView.value = defaultSettings.showTagsView;
       showAppLogo.value = defaultSettings.showAppLogo;
       showSettings.value = defaultSettings.showSettings;
-      showGuide.value = defaultSettings.showGuide;
-      showMenuSearch.value = defaultSettings.showMenuSearch;
       showFullscreen.value = defaultSettings.showFullscreen;
-      showSizeSelect.value = defaultSettings.showSizeSelect;
       showLangSelect.value = defaultSettings.showLangSelect;
       sidebarColorScheme.value = defaultSettings.sidebarColorScheme;
       layout.value = defaultSettings.layout as LayoutMode;
@@ -306,33 +266,25 @@ export const useSettingsStore = defineStore(
       menuThemeType,
       systemThemeColor,
       showMenuButton,
-      showFastEnter,
       showRefreshButton,
       showCrumbs,
       showWorkTab,
       showLanguage,
       showNprogress,
-      showSettingGuide,
-      showFestivalText,
       autoClose,
       uniqueOpened,
       colorWeak,
       refresh,
-      holidayFireworksLoaded,
       boxBorderMode,
       pageTransition,
       tabStyle,
       customRadius,
       containerWidth,
-      festivalDate,
       settingsVisible,
       showTagsView,
       showAppLogo,
       showSettings,
-      showGuide,
-      showMenuSearch,
       showFullscreen,
-      showSizeSelect,
       showLangSelect,
       sidebarColorScheme,
       layout,
@@ -344,7 +296,6 @@ export const useSettingsStore = defineStore(
       isDark,
       getMenuOpenWidth,
       getCustomRadius,
-      isShowFireworks,
       switchMenuLayouts,
       setMenuOpenWidth,
       setGlopTheme,
@@ -354,7 +305,6 @@ export const useSettingsStore = defineStore(
       setContainerWidth,
       setUniqueOpened,
       setButton,
-      setFastEnter,
       setAutoClose,
       setShowRefreshButton,
       setCrumbs,
@@ -362,16 +312,11 @@ export const useSettingsStore = defineStore(
       setLanguage,
       setNprogress,
       setColorWeak,
-      hideSettingGuide,
-      openSettingGuide,
       setPageTransition,
       setTabStyle,
       setMenuOpen,
       reload,
       setCustomRadius,
-      setholidayFireworksLoaded,
-      setShowFestivalText,
-      setFestivalDate,
       setDualMenuShowText,
       updateSetting,
       updateTheme,

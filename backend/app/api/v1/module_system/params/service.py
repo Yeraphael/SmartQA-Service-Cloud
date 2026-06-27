@@ -21,11 +21,10 @@ from .schema import (
 
 # 中间件 / 调度器高频读取的 sys_param 配置键集合。
 MIDDLEWARE_CONFIG_KEYS: tuple[str, ...] = (
-    "demo_enable",
+    "write_guard_enable",
     "ip_white_list",
     "white_api_list_path",
     "ip_black_list",
-    "operation_log_retention_days",
 )
 
 # 内存缓存（按租户隔离）
@@ -81,26 +80,17 @@ def _default_for(key: str) -> object:
     """缺省值表：新增 MIDDLEWARE_CONFIG_KEYS 时只需在这里登记默认值。"""
     if key in {"ip_white_list", "ip_black_list", "white_api_list_path"}:
         return []
-    if key == "demo_enable":
+    if key == "write_guard_enable":
         return False
-    if key == "operation_log_retention_days":
-        return 90
     return None
 
 
 def _parse_value(key: str, value: object) -> object:
     """按 key 的语义解析 config_value。"""
-    if key == "demo_enable":
+    if key == "write_guard_enable":
         return _parse_bool(value)
     if key in {"ip_white_list", "ip_black_list", "white_api_list_path"}:
         return _parse_json_list(value)
-    if key == "operation_log_retention_days":
-        if value is None:
-            return 90
-        try:
-            return int(value)
-        except (TypeError, ValueError):
-            return 90
     return value
 
 

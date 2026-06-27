@@ -8,12 +8,12 @@ from app.common.response import ResponseSchema, SuccessResponse
 from app.core.base_schema import AuthSchema
 from app.core.dependencies import db_getter, get_current_user
 from app.core.logger import logger
-from app.core.router_class import OperationLogRoute
+from app.core.router_class import SmartQARoute
 
 from .schema import CurrentUserUpdateSchema, UserChangePasswordSchema, UserForgetPasswordSchema, UserOutSchema
 from .service import UserService
 
-UserRouter = APIRouter(route_class=OperationLogRoute, prefix="/user", tags=["账号"])
+UserRouter = APIRouter(route_class=SmartQARoute, prefix="/user", tags=["账号"])
 
 
 @UserRouter.get(

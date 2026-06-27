@@ -16,12 +16,12 @@ from fastapi.responses import FileResponse, JSONResponse
 from app.common.response import ResponseSchema, SuccessResponse, UploadFileResponse
 from app.core.base_schema import UploadResponseSchema
 from app.core.dependencies import AuthPermission
-from app.core.router_class import OperationLogRoute
+from app.core.router_class import SmartQARoute
 from app.utils.upload_util import UploadUtil
 
 from .service import FileService
 
-FileRouter = APIRouter(route_class=OperationLogRoute, prefix="/file", tags=["公共模块", "文件管理"])
+FileRouter = APIRouter(route_class=SmartQARoute, prefix="/file", tags=["公共模块", "文件管理"])
 
 @FileRouter.post(
     "/upload",

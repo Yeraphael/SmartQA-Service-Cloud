@@ -76,16 +76,6 @@
               <span class="ml-2 text-sm break-all">{{ infoFormState.email || "—" }}</span>
             </div>
             <div class="mt-2.5 flex items-start">
-              <FaSvgIcon icon="ri:map-pin-line" class="text-g-700 shrink-0 mt-0.5" />
-              <span class="ml-2 text-sm">{{ infoFormState.dept?.name || "—" }}</span>
-            </div>
-            <div class="mt-2.5 flex items-start">
-              <FaSvgIcon icon="ri:briefcase-line" class="text-g-700 shrink-0 mt-0.5" />
-              <span class="ml-2 text-sm">
-                {{ infoFormState.positions?.map((p) => p.name).join("、") || "—" }}
-              </span>
-            </div>
-            <div class="mt-2.5 flex items-start">
               <FaSvgIcon icon="ri:calendar-line" class="text-g-700 shrink-0 mt-0.5" />
               <span class="ml-2 text-sm">
                 注册:
@@ -170,10 +160,10 @@
                   class="w-full"
                 >
                   <ElOption
-                    v-for="item in dictDataStore['sys_user_sex']"
-                    :key="String(item.dict_value)"
-                    :label="item.dict_label"
-                    :value="normalizeGenderValue(item.dict_value)"
+                    v-for="item in genderOptions"
+                    :key="item.value"
+                    :label="item.label"
+                    :value="item.value"
                   />
                 </ElSelect>
               </ElFormItem>
@@ -282,7 +272,7 @@
 import type { FormInstance, UploadRequestOptions, UploadFile } from "element-plus";
 import type { ElUpload } from "element-plus";
 import UserAPI, { type InfoFormState, type PasswordFormState } from "@/api/module_system/user";
-import { useUserStore, useDictStore } from "@stores";
+import { useUserStore } from "@stores";
 import { Camera } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 import { useI18n } from "vue-i18n";
@@ -292,7 +282,6 @@ defineOptions({ name: "UserProfile" });
 
 const { t } = useI18n();
 const userStore = useUserStore();
-const dictStore = useDictStore();
 const infoFormRef = ref<FormInstance>();
 const passwordFormRef = ref<FormInstance>();
 
@@ -302,7 +291,11 @@ const passwordChanging = ref(false);
 const isEdit = ref(false);
 const isEditPwd = ref(false);
 
-const dictDataStore = computed(() => dictStore.dictData);
+const genderOptions = [
+  { label: "未知", value: 0 },
+  { label: "男", value: 1 },
+  { label: "女", value: 2 },
+];
 
 const greeting = ref("");
 
@@ -335,9 +328,6 @@ const infoFormState = reactive<InfoFormState>({
   mobile: undefined,
   email: undefined,
   username: undefined,
-  dept_name: undefined,
-  dept: {},
-  positions: [],
   roles: [],
   avatar: undefined,
   created_time: undefined,
@@ -408,10 +398,6 @@ const initInfoForm = () => {
     gender: normalizeGenderValue(basicInfo.gender),
     avatar: basicInfo.avatar?.trim(),
   });
-};
-
-const getOptions = async () => {
-  await dictStore.getDict(["sys_user_sex"]);
 };
 
 const rules = {
@@ -642,7 +628,6 @@ async function onPasswordToggleSave() {
 
 onMounted(async () => {
   refreshGreeting();
-  await getOptions();
   initInfoForm();
 });
 </script>

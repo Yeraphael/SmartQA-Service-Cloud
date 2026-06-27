@@ -1,19 +1,9 @@
-import io
-from typing import Any
-
-import pandas as pd
-from fastapi import UploadFile
-
 from app.api.v1.module_platform.menu.crud import MenuCRUD
 from app.api.v1.module_platform.menu.schema import MenuOutSchema
-from app.api.v1.module_system.dept.crud import DeptCRUD
-from app.api.v1.module_system.position.crud import PositionCRUD
 from app.api.v1.module_system.role.crud import RoleCRUD
 from app.core.base_schema import AuthSchema, BatchSetAvailable
 from app.core.exceptions import CustomException
-from app.core.logger import logger
 from app.utils.common_util import traversal_to_tree
-from app.utils.excel_util import ExcelUtil
 from app.utils.hash_bcrpy_util import PwdUtil
 
 from .crud import UserCRUD
@@ -38,11 +28,7 @@ class UserService:
 
     async def detail(self, id: int) -> UserOutSchema:
         user = await UserCRUD(self.auth).get_or_404(id=id)
-        result = UserOutSchema.model_validate(user)
-        if user.dept_id:
-            dept = await DeptCRUD(self.auth).get(id=user.dept_id)
-            result.dept_name = dept.name if dept else None
-        return result
+        return UserOutSchema.model_validate(user)
 
     async def get_list(
         self,
@@ -77,19 +63,12 @@ class UserService:
         if user:
             raise CustomException(msg="已存在相同用户名称的账号")
 
-        if data.dept_id:
-            dept = await DeptCRUD(self.auth).get(id=data.dept_id)
-            if not dept:
-                raise CustomException(msg="该数据不存在")
-
         if data.password:
             data.password = PwdUtil.hash_password(password=data.password)
-        user_dict = data.model_dump(exclude_unset=True, exclude={"role_ids", "position_ids"})
+        user_dict = data.model_dump(exclude_unset=True, exclude={"role_ids"})
         new_user = await UserCRUD(self.auth).create(data=user_dict)
         if data.role_ids and len(data.role_ids) > 0:
             await UserCRUD(self.auth).set_user_roles(user_ids=[new_user.id], role_ids=data.role_ids)
-        if data.position_ids and len(data.position_ids) > 0:
-            await UserCRUD(self.auth).set_user_positions(user_ids=[new_user.id], position_ids=data.position_ids)
         return UserOutSchema.model_validate(new_user)
 
     async def update(self, id: int, data: UserUpdateSchema) -> UserOutSchema:
@@ -111,13 +90,6 @@ class UserService:
             exist_email_user = await UserCRUD(self.auth).get(email=data.email)
             if exist_email_user and exist_email_user.id != id:
                 raise CustomException(msg="该数据已存在")
-        if data.dept_id:
-            dept = await DeptCRUD(self.auth).get(id=data.dept_id)
-            if not dept:
-                raise CustomException(msg="该数据不存在")
-            if dept.status == 1:
-                raise CustomException(msg="部门已被禁用")
-
         new_user = await UserCRUD(self.auth).update(id=id, data=data)
 
         if data.role_ids and len(data.role_ids) > 0:
@@ -127,14 +99,6 @@ class UserService:
             if not all(role.status == 0 for role in roles):
                 raise CustomException(msg="更新失败，部分角色已被禁用")
             await UserCRUD(self.auth).set_user_roles(user_ids=[id], role_ids=data.role_ids)
-
-        if data.position_ids and len(data.position_ids) > 0:
-            positions = await PositionCRUD(self.auth).get_list(search={"id": ("in", data.position_ids)})
-            if len(positions) != len(data.position_ids):
-                raise CustomException(msg="更新失败，部分岗位不存在")
-            if not all(position.status == 0 for position in positions):
-                raise CustomException(msg="更新失败，部分岗位已被禁用")
-            await UserCRUD(self.auth).set_user_positions(user_ids=[id], position_ids=data.position_ids)
 
         return UserOutSchema.model_validate(new_user)
 
@@ -155,7 +119,6 @@ class UserService:
                 raise CustomException(msg="不能删除当前登陆用户")
 
         await UserCRUD(self.auth).set_user_roles(user_ids=ids, role_ids=[])
-        await UserCRUD(self.auth).set_user_positions(user_ids=ids, position_ids=[])
         await UserCRUD(self.auth).delete(ids=ids)
 
     async def current_info(self) -> UserOutSchema:
@@ -163,8 +126,6 @@ class UserService:
             raise CustomException(msg="该数据不存在")
         user = await UserCRUD(self.auth).get(id=self.auth.user.id)
         user_dict = UserOutSchema.model_validate(user)
-        if user and user.dept:
-            user_dict.dept_name = user.dept.name
 
         _pc_only = {"client": "pc"}
         if self.auth.user and self.auth.user.is_superuser:
@@ -255,7 +216,7 @@ class UserService:
 
         data.password = PwdUtil.hash_password(password=data.password)
         data.name = data.username
-        create_dict = data.model_dump(exclude_unset=True, exclude={"role_ids", "position_ids"})
+        create_dict = data.model_dump(exclude_unset=True, exclude={"role_ids"})
 
         if self.auth.user and self.auth.user.id:
             create_dict["created_id"] = self.auth.user.id
@@ -281,152 +242,3 @@ class UserService:
         new_password_hash = PwdUtil.hash_password(password=data.new_password)
         new_user = await UserCRUD(self.auth).forget_password(id=user.id, password_hash=new_password_hash)
         return UserOutSchema.model_validate(new_user)
-
-    async def batch_import(self, file: UploadFile, update_support: bool = False) -> str:
-        header_dict = {
-            "部门编号": "dept_id",
-            "账号": "username",
-            "昵称": "name",
-            "邮箱": "email",
-            "手机号": "mobile",
-            "性别": "gender",
-            "状态": "status",
-        }
-
-        try:
-            contents = await file.read()
-            df = pd.read_excel(io.BytesIO(contents))
-            await file.close()
-
-            if df.empty:
-                raise CustomException(msg="导入文件为空")
-
-            missing_headers = [header for header in header_dict if header not in df.columns]
-            if missing_headers:
-                raise CustomException(msg=f"导入文件缺少必要的列: {', '.join(missing_headers)}")
-
-            df.rename(columns=header_dict, inplace=True)
-
-            required_fields = ["username", "name", "dept_id"]
-            errors = []
-            for field in required_fields:
-                if df[field].isnull().any():
-                    missing_count = df[field].isnull().sum()
-                    errors.append(f"字段'{field}'有{missing_count}行缺少数据")
-
-            if errors:
-                raise CustomException(msg="\n".join(errors))
-
-            success_count = 0
-            error_msgs = []
-
-            for i, (_, row) in enumerate(df.iterrows(), start=2):
-                try:
-                    username = str(row["username"]).strip() if pd.notna(row["username"]) else ""
-                    name = str(row["name"]).strip() if pd.notna(row["name"]) else ""
-                    if not username:
-                        error_msgs.append(f"第{i}行: 账号不能为空")
-                        continue
-                    if not name:
-                        error_msgs.append(f"第{i}行: 昵称不能为空")
-                        continue
-
-                    user_data = {
-                        "username": username,
-                        "name": name,
-                        "email": str(row["email"]).strip() if pd.notna(row["email"]) else None,
-                        "mobile": str(row["mobile"]).strip() if pd.notna(row["mobile"]) else None,
-                        "gender": str(row["gender"]).strip() if pd.notna(row["gender"]) else "1",
-                        "status": 0 if str(row["status"]).strip() == "正常" else 1,
-                        "dept_id": int(row["dept_id"]),
-                        "password": PwdUtil.hash_password(password="123456"),
-                    }
-
-                    exists_user = await UserCRUD(self.auth).get(username=user_data["username"])
-                    if exists_user:
-                        if exists_user.is_superuser:
-                            error_msgs.append(f"第{i}行: 超级管理员不允许修改")
-                            continue
-                        if update_support:
-                            user_update_data = UserUpdateSchema(**user_data)
-                            await UserCRUD(self.auth).update(id=exists_user.id, data=user_update_data)
-                            success_count += 1
-                        else:
-                            error_msgs.append(f"第{i}行: 用户 {user_data['username']} 已存在")
-                    else:
-                        user_create_schema = UserCreateSchema(**user_data)
-                        user_create_data = user_create_schema.model_dump(exclude_unset=True, exclude={"role_ids", "position_ids"})
-                        new_user = await UserCRUD(self.auth).create(data=user_create_data)
-                        if user_create_schema.role_ids and len(user_create_schema.role_ids) > 0:
-                            await UserCRUD(self.auth).set_user_roles(user_ids=[new_user.id], role_ids=user_create_schema.role_ids)
-                        if user_create_schema.position_ids and len(user_create_schema.position_ids) > 0:
-                            await UserCRUD(self.auth).set_user_positions(user_ids=[new_user.id], position_ids=user_create_schema.position_ids)
-                        success_count += 1
-
-                except Exception as e:
-                    error_msgs.append(f"第{i}行: 异常{e!s}")
-                    continue
-
-            result = f"成功导入 {success_count} 条数据"
-            if error_msgs:
-                result += "\n错误信息:\n" + "\n".join(error_msgs)
-            return result
-
-        except Exception as e:
-            logger.error(f"批量导入用户失败: {e!s}")
-            raise CustomException(msg=f"导入失败: {e!s}") from e
-
-    @staticmethod
-    def get_import_template() -> bytes:
-        header_list = [
-            "部门编号",
-            "账号",
-            "昵称",
-            "邮箱",
-            "手机号",
-            "性别",
-            "状态",
-        ]
-        selector_header_list = ["性别", "状态"]
-        option_list = [
-            {"性别": ["男", "女", "未知"]},
-            {"状态": ["正常", "停用"]},
-        ]
-        return ExcelUtil.get_excel_template(
-            header_list=header_list,
-            selector_header_list=selector_header_list,
-            option_list=option_list,
-        )
-
-    @staticmethod
-    def export_list(user_list: list[dict[str, Any]]) -> bytes:
-        if not user_list:
-            raise CustomException(msg="没有数据可导出")
-
-        mapping_dict = {
-            "id": "用户编号",
-            "avatar": "头像",
-            "username": "用户名称",
-            "name": "用户昵称",
-            "dept_name": "部门",
-            "email": "邮箱",
-            "mobile": "手机号",
-            "gender": "性别",
-            "status": "状态",
-            "is_superuser": "是否超级管理员",
-            "last_login": "最后登录时间",
-            "description": "备注",
-            "created_time": "创建时间",
-            "updated_time": "更新时间",
-            "updated_id": "更新者ID",
-        }
-
-        data = user_list.copy()
-        for item in data:
-            item["status"] = "启用" if item.get("status") == 0 else "停用"
-            gender = item.get("gender")
-            item["gender"] = "男" if gender == "1" else ("女" if gender == "2" else "未知")
-            item["is_superuser"] = "是" if item.get("is_superuser") else "否"
-            item["creator"] = item.get("created_by", {}).get("name", "未知") if isinstance(item.get("created_by"), dict) else "未知"
-
-        return ExcelUtil.export_list2excel(list_data=data, mapping_dict=mapping_dict)

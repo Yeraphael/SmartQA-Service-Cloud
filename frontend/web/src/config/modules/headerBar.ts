@@ -9,17 +9,9 @@ export const headerBarConfig: HeaderBarFeatureConfig = {
     enabled: true,
     description: "Show the current page refresh button.",
   },
-  fastEnter: {
-    enabled: false,
-    description: "Disabled for SmartQA P0.",
-  },
   breadcrumb: {
     enabled: true,
     description: "Show current route breadcrumb.",
-  },
-  globalSearch: {
-    enabled: false,
-    description: "Disabled for SmartQA P0.",
   },
   fullscreen: {
     enabled: true,
@@ -36,10 +28,6 @@ export const headerBarConfig: HeaderBarFeatureConfig = {
   themeToggle: {
     enabled: true,
     description: "Allow light and dark theme switching.",
-  },
-  sizeSelect: {
-    enabled: true,
-    description: "Show Element Plus size selector.",
   },
 };
 

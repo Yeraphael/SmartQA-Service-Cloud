@@ -51,11 +51,6 @@
           @click="reload"
         />
 
-        <!-- 蹇€熷叆鍙?-->
-        <FaFastEnter v-if="shouldShowFastEnter && width >= headerBarFastEnterMinWidth">
-          <FaIconButton icon="ri:function-line" class="ml-3" />
-        </FaFastEnter>
-
         <!-- 闈㈠寘灞?-->
         <FaBreadcrumb
           v-if="(shouldShowBreadcrumb && isLeftMenu) || (shouldShowBreadcrumb && isDualMenu)"
@@ -69,23 +64,6 @@
       </div>
 
       <div id="app-header-toolbar" class="flex items-center gap-2.5">
-        <!-- 鎼滅储 -->
-        <div
-          v-if="shouldShowGlobalSearch"
-          class="flex items-center justify-between w-40 h-9 px-2.5 cursor-pointer border border-g-400 rounded-custom-sm max-md:hidden! transition duration-300 hover:-translate-y-0.5 hover:shadow-md"
-          @click="openSearchDialog"
-        >
-          <div class="flex items-center">
-            <FaSvgIcon icon="ri:search-line" class="text-sm text-g-500" />
-            <span class="ml-1 text-xs font-normal text-g-500">{{ $t("topBar.search.title") }}</span>
-          </div>
-          <div class="flex items-center h-5 px-1.5 text-g-500/80 border border-g-400 rounded">
-            <FaSvgIcon v-if="isWindows" icon="vaadin:ctrl-a" class="text-sm" />
-            <FaSvgIcon v-else icon="ri:command-fill" class="text-xs" />
-            <span class="ml-0.5 text-xs">k</span>
-          </div>
-        </div>
-
         <!-- 鍏ㄥ睆鎸夐挳 -->
         <FaIconButton
           v-if="shouldShowFullscreen"
@@ -94,14 +72,6 @@
           class="max-md:hidden!"
           @click="toggleFullScreen"
         />
-
-        <!-- 缁勪欢灏哄 default/large/small锛堟部鐢ㄦ棫鐗堟寔涔呭寲寮€鍏?showSizeSelect锛?-->
-        <div
-          v-if="shouldShowSizeSelect"
-          class="flex items-center justify-center ml-1 max-md:hidden!"
-        >
-          <FaSizeSelect />
-        </div>
 
         <!-- 鍥介檯鍖栨寜閽?-->
         <ElDropdown
@@ -124,25 +94,6 @@
             </ElDropdownMenu>
           </template>
         </ElDropdown>
-
-        <!-- 璁剧疆鎸夐挳 -->
-        <div v-if="shouldShowSettings">
-          <ElPopover :visible="showSettingGuide" placement="bottom-start" :width="190" :offset="0">
-            <template #reference>
-              <div class="flex items-center justify-center">
-                <FaIconButton icon="ri:settings-line" class="setting-btn" @click="openSetting" />
-              </div>
-            </template>
-            <template #default>
-              <p>
-                {{ $t("topBar.guide.title") }}
-                <span :style="{ color: systemThemeColor }">{{ $t("topBar.guide.theme") }}</span>
-                銆?                <span :style="{ color: systemThemeColor }">{{ $t("topBar.guide.menu") }}</span>
-                {{ $t("topBar.guide.description") }}
-              </p>
-            </template>
-          </ElPopover>
-        </div>
 
         <!-- 涓婚鍒囨崲鎸夐挳 -->
         <FaIconButton
@@ -169,14 +120,12 @@ import { LanguageEnum, MenuTypeEnum } from "@/enums/appEnum";
 import { useSettingsStore, useMenuStore, useUserStore, useConfigStore } from "@stores";
 import AppConfig from "@/config";
 import { languageOptions } from "@/locales";
-import { mittBus, themeAnimation } from "@utils";
+import { themeAnimation } from "@utils";
 import { useCommon } from "@/hooks/core/useCommon";
 import { useHeaderBar } from "@/hooks/core/useHeaderBar";
 import FaUserMenu from "./widgets/FaUserMenu.vue";
 
 defineOptions({ name: "FaHeaderBar" });
-
-const isWindows = navigator.userAgent.includes("Windows");
 
 const router = useRouter();
 const { locale } = useI18n();
@@ -202,19 +151,13 @@ const headerSystemName = computed(() => {
 const {
   shouldShowMenuButton,
   shouldShowRefreshButton,
-  shouldShowFastEnter,
   shouldShowBreadcrumb,
-  shouldShowGlobalSearch,
   shouldShowFullscreen,
   shouldShowLanguage,
-  shouldShowSettings,
   shouldShowThemeToggle,
-  shouldShowSizeSelect,
-  fastEnterMinWidth: headerBarFastEnterMinWidth,
 } = useHeaderBar();
 
-const { menuOpen, systemThemeColor, showSettingGuide, menuType, isDark, tabStyle, showAppLogo } =
-  storeToRefs(settingStore);
+const { menuOpen, menuType, isDark, tabStyle, showAppLogo } = storeToRefs(settingStore);
 
 const { language } = storeToRefs(userStore);
 const { menuList } = storeToRefs(menuStore);
@@ -280,25 +223,6 @@ const changeLanguage = (lang: LanguageEnum): void => {
   userStore.setLanguage(lang);
   reload(50);
 };
-
-/**
- * 鎵撳紑璁剧疆闈㈡澘
- */
-const openSetting = (): void => {
-  mittBus.emit("openSetting");
-
-  // 闅愯棌璁剧疆寮曞鎻愮ず
-  if (showSettingGuide.value) {
-    settingStore.hideSettingGuide();
-  }
-};
-
-/**
- * 鎵撳紑鍏ㄥ眬鎼滅储瀵硅瘽妗? */
-const openSearchDialog = (): void => {
-  mittBus.emit("openSearchDialog");
-};
-
 
 </script>
 

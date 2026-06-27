@@ -12,13 +12,10 @@ export const SETTING_DEFAULT_CONFIG = {
   version: pkg.version as string,
 
   showSettings: false,
-  showMenuSearch: false,
   showFullscreen: true,
-  showSizeSelect: true,
   showLangSelect: false,
   showTagsView: true,
   showAppLogo: true,
-  showGuide: false,
 
   layout: LayoutMode.LEFT,
   theme: prefersDark ? ThemeMode.DARK : ThemeMode.LIGHT,
@@ -26,7 +23,6 @@ export const SETTING_DEFAULT_CONFIG = {
   language: LanguageEnum.ZH_CN,
   themeColor: "#4080FF",
   sidebarColorScheme: SidebarColor.CLASSIC_BLUE,
-  guideVisible: false,
   grayMode: false,
   pageSwitchingAnimation: "fade-slide",
 
@@ -40,27 +36,22 @@ export const SETTING_DEFAULT_CONFIG = {
   systemThemeColor: AppConfig.systemMainColor[0] ?? "#4080FF",
 
   showMenuButton: true,
-  showFastEnter: false,
   showRefreshButton: true,
   showCrumbs: true,
   showWorkTab: true,
   showLanguage: false,
   showNprogress: true,
-  showSettingGuide: false,
-  showFestivalText: false,
 
   autoClose: false,
   uniqueOpened: true,
   colorWeak: false,
   refresh: false,
-  holidayFireworksLoaded: false,
 
   boxBorderMode: true,
   pageTransition: "slide-left",
   tabStyle: "tab-google",
   customRadius: "0.75",
   containerWidth: ContainerWidthEnum.FULL,
-  festivalDate: "",
 };
 
 export const defaultSettings = SETTING_DEFAULT_CONFIG;

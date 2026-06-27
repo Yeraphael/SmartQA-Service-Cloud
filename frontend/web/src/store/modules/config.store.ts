@@ -9,7 +9,7 @@
  * - 网站图标配置（登录背景、favicon、Logo）
  * - 安全隐私配置（服务条款、版权、隐私政策）
  * - 接口安全配置（白名单、黑名单）
- * - 演示环境配置
+ * - 写保护配置
  *
  * ## 使用场景
  *
@@ -61,7 +61,7 @@ export const useConfigStore = defineStore(
       }
       configLoading.value = true;
       try {
-        // 1. 获取系统级配置（演示模式、IP黑白名单等）
+        // 1. 获取系统级配置（写保护、IP 黑白名单等）
         const response = await ParamsAPI.getInitConfig();
         const list = response?.data?.data;
         if (!Array.isArray(list)) {

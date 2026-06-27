@@ -11,21 +11,6 @@
  * 3. 前端模式 - 从用户信息中获取按钮权限列表（如 ['add', 'edit', 'delete']）
  * 4. 后端模式 - 从路由 meta 配置中获取权限列表（如 [{ authMark: 'add' }]）
  *
- * ## 使用示例
- *
- * ```typescript
- * const { hasAuth } = useAuth()
- *
- * // 检查是否有新增权限
- * if (hasAuth('add')) {
- *   // 显示新增按钮
- * }
- *
- * // 在模板中使用
- * <el-button v-if="hasAuth('edit')">编辑</el-button>
- * <el-button v-if="hasAuth('delete')">删除</el-button>
- * ```
- *
  * @module useAuth
  * @author SmartQA
  */

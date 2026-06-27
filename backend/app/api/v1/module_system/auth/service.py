@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from typing import Any, NewType
 
 import ua_parser
-from fastapi import BackgroundTasks, Request
+from fastapi import Request
 from redis.asyncio.client import Redis
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -42,22 +42,6 @@ CaptchaKey = NewType("CaptchaKey", str)
 CaptchaBase64 = NewType("CaptchaBase64", str)
 
 
-async def _write_login_log(
-    username: str,
-    status: int,
-    login_ip: str | None = None,
-    login_location: str | None = None,
-    request_os: str | None = None,
-    request_browser: str | None = None,
-    msg: str | None = None,
-) -> int | None:
-    return None
-
-
-async def _async_fill_login_location(redis: Redis, login_log_id: int, ip: str | None) -> None:
-    return None
-
-
 def _resolve_request_ip(request: Request) -> str | None:
     return get_client_ip(request)
 
@@ -80,17 +64,10 @@ class LoginService:
     async def authenticate_user(
         cls,
         request: Request,
-        background_tasks: BackgroundTasks,
         redis: Redis,
         login_form: CustomOAuth2PasswordRequestForm,
         db: AsyncSession,
     ) -> LoginOutSchema:
-        ua_result = ua_parser.parse(request.headers.get("user-agent"))
-        request_ip = _resolve_request_ip(request)
-        login_location = await IpLocalUtil.resolve_location_for_log(redis, request_ip)
-        login_os = ua_result.os.family if ua_result.os else "Unknown"
-        login_browser = ua_result.user_agent.family if ua_result.user_agent else "Unknown"
-
         referer = request.headers.get("referer", "")
         request_from_docs = referer.endswith(("docs", "redoc"))
 
@@ -106,39 +83,12 @@ class LoginService:
         auth = AuthSchema(db=db, check_data_scope=False)
         user = await UserCRUD(auth).get(username=login_form.username)
         if not user:
-            await _write_login_log(
-                username=login_form.username,
-                status=2,
-                login_ip=request_ip,
-                login_location=login_location,
-                request_os=login_os,
-                request_browser=login_browser,
-                msg="用户不存在",
-            )
             raise CustomException(msg="用户不存在")
 
         if not PwdUtil.verify_password(plain_password=login_form.password, password_hash=user.password):
-            await _write_login_log(
-                username=login_form.username,
-                status=2,
-                login_ip=request_ip,
-                login_location=login_location,
-                request_os=login_os,
-                request_browser=login_browser,
-                msg="账号或密码错误",
-            )
             raise CustomException(msg="账号或密码错误")
 
         if user.status == 1:
-            await _write_login_log(
-                username=login_form.username,
-                status=2,
-                login_ip=request_ip,
-                login_location=login_location,
-                request_os=login_os,
-                request_browser=login_browser,
-                msg="用户已被停用",
-            )
             raise CustomException(msg="用户已被停用")
 
         await cls._ensure_user_tenant_enabled(db=db, user=user)
@@ -161,18 +111,6 @@ class LoginService:
             "avatar": user.avatar,
             "is_superuser": user.is_superuser,
         }
-
-        log_id = await _write_login_log(
-            username=user.username,
-            status=1,
-            login_ip=request_ip,
-            login_location=login_location,
-            request_os=login_os,
-            request_browser=login_browser,
-            msg="登录成功",
-        )
-        if log_id and login_location == "归属地查询中":
-            background_tasks.add_task(_async_fill_login_location, redis, log_id, request_ip)
 
         return LoginOutSchema(
             access_token=token.access_token,

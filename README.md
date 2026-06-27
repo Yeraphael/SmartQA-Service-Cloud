@@ -8,7 +8,7 @@
 - 扩建业务库：`smartqa`
 - 初始老板账号：`boss/SmartQA@123456`
 - AI 模型：阿里百炼 `qwen3.7-plus`
-- 后端运行时仅启用 SmartQA 业务插件，原框架示例、任务、内置 AI 聊天等非 P0 模块不进入业务菜单和业务路由。
+- 后端运行时仅启用 SmartQA 业务插件，原框架参考业务、任务、内置 AI 聊天等非 P0 模块不进入业务菜单和业务路由。
 
 敏感信息不要提交到 GitHub。数据库、阿里模型等账号密钥放在本地 `docs/` 或环境变量中，部署时按宝塔服务器实际配置填写。
 
@@ -46,6 +46,20 @@ cd backend
 python scripts\smartqa_pipeline.py verify
 ```
 
+立即同步真实千牛源库：
+
+```bash
+cd backend
+python scripts\smartqa_pipeline.py sync
+```
+
+每日抽检并调用阿里模型：
+
+```bash
+cd backend
+python scripts\smartqa_pipeline.py daily-qc --limit 100 --execute
+```
+
 如需按真实数据执行同步、建任务、调用模型质检，使用同一脚本的子命令查看帮助：
 
 ```bash
@@ -78,7 +92,7 @@ python scripts\smartqa_pipeline.py --help
 
 ```bash
 cd backend
-python -m compileall app\config\setting.py app\core\discover.py app\core\memory_redis.py app\core\dependencies.py app\init_app.py app\scripts\initialize.py app\api\v1\module_system\user\schema.py app\plugin\module_smartqa scripts\smartqa_pipeline.py
+python -m compileall app scripts
 ```
 
 前端类型检查：

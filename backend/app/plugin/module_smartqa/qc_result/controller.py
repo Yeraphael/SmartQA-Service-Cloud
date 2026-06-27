@@ -7,12 +7,12 @@ from app.common.response import ResponseSchema, SuccessResponse
 from app.core.base_params import PaginationQueryParam
 from app.core.base_schema import AuthSchema
 from app.core.dependencies import AuthPermission
-from app.core.router_class import OperationLogRoute
+from app.core.router_class import SmartQARoute
 
 from .schema import QcResultDetailSchema, QcResultQueryParam
 from .service import QcResultService
 
-QcResultRouter = APIRouter(route_class=OperationLogRoute, prefix="/qc/results", tags=["SmartQA", "质检结果"])
+QcResultRouter = APIRouter(route_class=SmartQARoute, prefix="/qc/results", tags=["SmartQA", "质检结果"])
 router = QcResultRouter  # Alias for router import
 
 

@@ -20,6 +20,15 @@ class QcTaskExecuteSchema(BaseModel):
     batch_size: int = Field(10, description="批量执行大小", ge=1, le=100)
 
 
+class QcDailySampleSchema(BaseModel):
+    """每日质检抽样。"""
+
+    limit: int = Field(100, description="抽检会话数", ge=1, le=1000)
+    execute: bool = Field(False, description="是否立即调用模型执行")
+    rule_version: str = Field("smartqa-p0-20260625", description="规则版本")
+    model_name: str | None = Field(None, description="模型名称")
+
+
 class QcTaskSchema(BaseModel):
     """质检任务响应。"""
 

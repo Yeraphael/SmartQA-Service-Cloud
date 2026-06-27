@@ -148,9 +148,7 @@ async def _load_user_from_db(db: AsyncSession, username: str):
     stmt = (
         select(UserModel)
         .options(
-            selectinload(UserModel.dept),
             selectinload(UserModel.roles).selectinload(RoleModel.menus),
-            selectinload(UserModel.positions),
             selectinload(UserModel.created_by),
         )
         .where(UserModel.username == username, UserModel.is_deleted == False)  # noqa: E712
@@ -162,11 +160,9 @@ async def _load_user_from_db(db: AsyncSession, username: str):
     if user.status == 1:
         raise CustomException(msg="用户已被停用", code=10401, status_code=401)
 
-    # 过滤不可用的角色和职位（在会话内完成，确保关联数据已加载）
+    # 过滤不可用的角色（在会话内完成，确保关联数据已加载）
     if hasattr(user, "roles"):
         user.roles = [role for role in user.roles if role and role.status == 0]
-    if hasattr(user, "positions"):
-        user.positions = [pos for pos in user.positions if pos and pos.status == 0]
 
     return user
 

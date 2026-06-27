@@ -31,6 +31,81 @@ DEFAULT_TENANT_ID = 1
 DEFAULT_RULE_VERSION = "smartqa-p0-20260625"
 DEFAULT_PROMPT_VERSION = "smartqa-p0-prompt-20260625"
 DEFAULT_MODEL_NAME = "qwen3.7-plus"
+SMARTQA_ALLOWED_TABLES = {
+    "alembic_version",
+    "platform_menu",
+    "platform_tenant",
+    "sys_param",
+    "sys_role",
+    "sys_role_menus",
+    "sys_user",
+    "sys_user_roles",
+    "ods_import_batch",
+    "ods_qn_chat_record",
+    "ods_qn_shop_record",
+    "dim_shop",
+    "dim_product",
+    "dim_staff",
+    "dim_staff_account",
+    "dim_customer",
+    "dim_customer_identity",
+    "dwd_qn_conversation",
+    "dwd_qn_message",
+    "dwd_customer_staff_relation",
+    "qc_rule",
+    "qc_prompt_template",
+    "qc_rule_version",
+    "qc_task",
+    "qc_result",
+    "qc_issue",
+    "qc_issue_evidence",
+    "model_call_log",
+}
+SMARTQA_REQUIRED_PARAMS: dict[str, dict[str, Any]] = {
+    "tenant_name": {
+        "config_name": "系统名称",
+        "config_value": "SmartQA Service Cloud",
+        "description": "前端显示的系统名称",
+    },
+    "tenant_logo": {
+        "config_name": "系统Logo",
+        "config_value": "",
+        "description": "前端显示的系统Logo地址",
+    },
+    "white_api_list_path": {
+        "config_name": "接口白名单",
+        "config_value": json.dumps(
+            [
+                "/api/v1/system/auth/login",
+                "/api/v1/system/auth/token/refresh",
+                "/api/v1/system/auth/captcha/get",
+                "/api/v1/system/auth/logout",
+                "/api/v1/system/config/info",
+                "/common/health",
+                "/common/health/ready",
+                "/common/health/live",
+                "/metrics",
+            ],
+            ensure_ascii=False,
+        ),
+        "description": "无需登录即可访问的接口列表",
+    },
+    "ip_white_list": {
+        "config_name": "访问IP白名单",
+        "config_value": "[]",
+        "description": "写保护开启时允许写操作的IP列表",
+    },
+    "ip_black_list": {
+        "config_name": "访问IP黑名单",
+        "config_value": "[]",
+        "description": "禁止访问的IP列表",
+    },
+    "write_guard_enable": {
+        "config_name": "写保护开关",
+        "config_value": "false",
+        "description": "启用后非白名单IP禁止写操作",
+    },
+}
 
 
 def load_env_file(path: str | Path = "env/.env.dev") -> None:
@@ -324,6 +399,7 @@ class SmartQAPipeline:
             try:
                 with conn.cursor() as cur:
                     dropped_tables = self._drop_retired_template_tables(cur)
+                    cleaned_params = self._cleanup_retired_params(cur)
                     boss_user_id = self._ensure_boss(cur)
                     role_ids = self._ensure_roles(cur)
                     self._bind_user_role(cur, boss_user_id, role_ids["boss"])
@@ -343,10 +419,29 @@ class SmartQAPipeline:
             "menus": menu_result["changed"],
             "deleted_menus": deleted_menus,
             "dropped_tables": dropped_tables,
+            "cleaned_params": cleaned_params,
             "boss_menu_ids": menu_result["boss_menu_ids"],
             "staff_menu_ids": menu_result["staff_menu_ids"],
             "rules": rule_count,
             **staff_result,
+        }
+
+    def prune_retired_tables(self) -> dict[str, Any]:
+        """Drop database tables and parameters outside the SmartQA P0 scope."""
+
+        with mysql_conn(self.target_config) as conn:
+            try:
+                with conn.cursor() as cur:
+                    dropped_tables = self._drop_retired_template_tables(cur)
+                    cleaned_params = self._cleanup_retired_params(cur)
+                conn.commit()
+            except Exception:
+                conn.rollback()
+                raise
+        return {
+            "dropped_tables": dropped_tables,
+            "dropped_count": len(dropped_tables),
+            "cleaned_params": cleaned_params,
         }
 
     def create_qc_tasks(
@@ -355,6 +450,7 @@ class SmartQAPipeline:
         only_pending: bool = False,
         model_name: str | None = None,
         rule_version: str = DEFAULT_RULE_VERSION,
+        conversation_ids: list[int] | None = None,
     ) -> dict[str, Any]:
         model_name = model_name or get_openai_config()["model"] or DEFAULT_MODEL_NAME
         with mysql_conn(self.target_config) as conn:
@@ -367,24 +463,29 @@ class SmartQAPipeline:
                     prompt_version = version["prompt_version"]
 
                     where = "WHERE c.is_deleted=0"
+                    params: list[Any] = []
                     if only_pending:
                         where += " AND c.qc_status IN ('pending','failed')"
+                    if conversation_ids:
+                        placeholders = ",".join(["%s"] * len(conversation_ids))
+                        where += f" AND c.id IN ({placeholders})"
+                        params.extend(conversation_ids)
                     sql = f"""
                         SELECT c.id, c.conversation_id, c.data_hash
                         FROM dwd_qn_conversation c
                         {where}
                         ORDER BY c.start_time, c.id
                     """
-                    if limit:
+                    if limit and not conversation_ids:
                         sql += f" LIMIT {int(limit)}"
-                    cur.execute(sql)
+                    cur.execute(sql, params)
                     conversations = cur.fetchall()
 
                     inserted = 0
                     skipped = 0
                     now = datetime.now()
                     for conv in conversations:
-                        task_id = f"task_{conv['conversation_id']}_{short_hash(rule_version + prompt_version, 8)}"
+                        task_id = f"task_{conv['id']}_{short_hash(conv['conversation_id'] + conv['data_hash'] + rule_version + prompt_version, 16)}"
                         cur.execute(
                             """
                             INSERT INTO qc_task (
@@ -411,11 +512,143 @@ class SmartQAPipeline:
                             inserted += 1
                         else:
                             skipped += 1
+                    task_ids: list[int] = []
+                    if conversations:
+                        ids = [conv["id"] for conv in conversations]
+                        placeholders = ",".join(["%s"] * len(ids))
+                        cur.execute(
+                            f"""
+                            SELECT t.id
+                            FROM qc_task t
+                            JOIN dwd_qn_conversation c ON c.id=t.conversation_id
+                            WHERE t.conversation_id IN ({placeholders})
+                              AND t.conversation_data_hash=c.data_hash
+                              AND t.rule_version=%s
+                              AND t.prompt_version=%s
+                              AND t.is_deleted=0
+                            ORDER BY FIELD(t.conversation_id, {placeholders})
+                            """,
+                            [*ids, rule_version, prompt_version, *ids],
+                        )
+                        task_ids = [row["id"] for row in cur.fetchall()]
                 conn.commit()
             except Exception:
                 conn.rollback()
                 raise
-        return {"created": inserted, "skipped": skipped, "selected": len(conversations), "model_name": model_name}
+        return {
+            "created": inserted,
+            "skipped": skipped,
+            "selected": len(conversations),
+            "task_ids": task_ids,
+            "model_name": model_name,
+            "rule_version": rule_version,
+            "prompt_version": prompt_version,
+        }
+
+    def run_daily_qc_sample(
+        self,
+        limit: int = 100,
+        execute: bool = True,
+        model_name: str | None = None,
+        rule_version: str = DEFAULT_RULE_VERSION,
+    ) -> dict[str, Any]:
+        """Create and optionally execute a daily QC sample covering every staff member."""
+
+        sample = self.select_daily_qc_sample(limit=limit, rule_version=rule_version)
+        create_result = self.create_qc_tasks(
+            conversation_ids=sample["conversation_ids"],
+            model_name=model_name,
+            rule_version=rule_version,
+        )
+        execute_result: dict[str, Any] = {}
+        task_ids = create_result.get("task_ids") or []
+        if execute and task_ids:
+            execute_result = self.execute_qc_tasks(limit=len(task_ids), task_ids=task_ids)
+        return {
+            "limit": limit,
+            "execute": execute,
+            "selected_count": len(sample["conversation_ids"]),
+            "staff_count": sample["staff_count"],
+            "covered_staff_count": sample["covered_staff_count"],
+            "expanded_for_staff_coverage": sample["expanded_for_staff_coverage"],
+            "conversation_ids": sample["conversation_ids"],
+            "staff_ids": sample["staff_ids"],
+            "create_result": create_result,
+            "execute_result": execute_result,
+        }
+
+    def select_daily_qc_sample(self, limit: int = 100, rule_version: str = DEFAULT_RULE_VERSION) -> dict[str, Any]:
+        """Pick a daily QC sample. First pass covers each staff, second pass fills by recency."""
+
+        limit = max(1, int(limit or 100))
+        with mysql_conn(self.target_config) as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT prompt_version FROM qc_rule_version WHERE rule_version=%s AND is_deleted=0", (rule_version,))
+                version = cur.fetchone()
+                if not version:
+                    raise RuntimeError(f"Rule version not found: {rule_version}")
+                prompt_version = version["prompt_version"]
+
+                def fetch_candidates(exclude_success: bool) -> list[dict[str, Any]]:
+                    success_filter = ""
+                    if exclude_success:
+                        success_filter = """
+                            AND NOT EXISTS (
+                                SELECT 1
+                                FROM qc_task t
+                                WHERE t.conversation_id=c.id
+                                  AND t.conversation_data_hash=c.data_hash
+                                  AND t.rule_version=%s
+                                  AND t.prompt_version=%s
+                                  AND t.status='success'
+                                  AND t.is_deleted=0
+                            )
+                        """
+                    sql = f"""
+                        SELECT c.id, c.staff_id, c.start_time, c.message_count
+                        FROM dwd_qn_conversation c
+                        WHERE c.is_deleted=0
+                          AND c.staff_id IS NOT NULL
+                          {success_filter}
+                        ORDER BY c.start_time DESC, c.id DESC
+                    """
+                    params = (rule_version, prompt_version) if exclude_success else ()
+                    cur.execute(sql, params)
+                    return list(cur.fetchall())
+
+                candidates = fetch_candidates(exclude_success=True)
+                if not candidates:
+                    candidates = fetch_candidates(exclude_success=False)
+
+        staff_ids = sorted({row["staff_id"] for row in candidates if row.get("staff_id") is not None})
+        effective_limit = max(limit, len(staff_ids))
+        selected: list[dict[str, Any]] = []
+        selected_ids: set[int] = set()
+        covered_staff: set[int] = set()
+
+        for row in candidates:
+            staff_id = row.get("staff_id")
+            if staff_id is None or staff_id in covered_staff:
+                continue
+            selected.append(row)
+            selected_ids.add(row["id"])
+            covered_staff.add(staff_id)
+
+        for row in candidates:
+            if len(selected) >= effective_limit:
+                break
+            if row["id"] in selected_ids:
+                continue
+            selected.append(row)
+            selected_ids.add(row["id"])
+
+        return {
+            "conversation_ids": [row["id"] for row in selected],
+            "staff_ids": staff_ids,
+            "staff_count": len(staff_ids),
+            "covered_staff_count": len(covered_staff),
+            "expanded_for_staff_coverage": effective_limit > limit,
+        }
 
     def execute_qc_tasks(self, limit: int = 1, task_ids: list[int] | None = None) -> dict[str, Any]:
         """Execute QC tasks against Ali/OpenAI-compatible endpoint."""
@@ -440,7 +673,7 @@ class SmartQAPipeline:
                 if task_ids:
                     placeholders = ",".join(["%s"] * len(task_ids))
                     cur.execute(
-                        f"SELECT * FROM qc_task WHERE id IN ({placeholders}) AND is_deleted=0 ORDER BY id",
+                        f"SELECT * FROM qc_task WHERE id IN ({placeholders}) AND status IN ('pending','failed') AND is_deleted=0 ORDER BY id",
                         task_ids,
                     )
                 else:
@@ -1176,33 +1409,18 @@ class SmartQAPipeline:
             cur.execute("INSERT IGNORE INTO sys_role_menus (role_id, menu_id) VALUES (%s,%s)", (role_id, menu_id))
 
     def _drop_retired_template_tables(self, cur: pymysql.cursors.DictCursor) -> list[str]:
+        cur.execute(
+            """
+            SELECT TABLE_NAME
+            FROM information_schema.TABLES
+            WHERE TABLE_SCHEMA=DATABASE()
+              AND TABLE_TYPE='BASE TABLE'
+            """
+        )
         tables = [
-            "platform_email_log",
-            "platform_email_template",
-            "platform_email_config",
-            "platform_invoice",
-            "platform_payment",
-            "platform_refund",
-            "platform_order",
-            "platform_package_menu",
-            "platform_tenant_plugin",
-            "platform_plugin",
-            "platform_package",
-            "sys_notice_read",
-            "sys_notice",
-            "sys_ticket",
-            "sys_login_log",
-            "sys_operation_log",
-            "task_workflow_node_type",
-            "task_workflow_node",
-            "task_workflow",
-            "task_cronjob_node",
-            "task_cronjob_job",
-            "gen_table_column",
-            "gen_table",
-            "example_demo",
-            "ai_chat_message",
-            "ai_chat_session",
+            row["TABLE_NAME"]
+            for row in cur.fetchall()
+            if row["TABLE_NAME"] not in SMARTQA_ALLOWED_TABLES
         ]
         dropped: list[str] = []
         for table in tables:
@@ -1232,6 +1450,77 @@ class SmartQAPipeline:
             cur.execute(f"DROP TABLE IF EXISTS `{table}`")
             dropped.append(table)
         return dropped
+
+    def _cleanup_retired_params(self, cur: pymysql.cursors.DictCursor) -> dict[str, Any]:
+        actions: list[str] = []
+        for config_key, payload in SMARTQA_REQUIRED_PARAMS.items():
+            cur.execute(
+                """
+                SELECT id
+                FROM sys_param
+                WHERE tenant_id=%s AND config_key=%s
+                ORDER BY is_deleted ASC, id ASC
+                LIMIT 1
+                """,
+                (self.tenant_id, config_key),
+            )
+            row = cur.fetchone()
+            update_values = (
+                payload["config_name"],
+                payload["config_value"],
+                payload["description"],
+            )
+            if row:
+                cur.execute(
+                    """
+                    UPDATE sys_param
+                    SET config_name=%s,
+                        config_value=%s,
+                        config_type=1,
+                        status=0,
+                        description=%s,
+                        updated_time=NOW(),
+                        is_deleted=0
+                    WHERE id=%s
+                    """,
+                    (*update_values, row["id"]),
+                )
+                cur.execute(
+                    """
+                    DELETE FROM sys_param
+                    WHERE tenant_id=%s AND config_key=%s AND id<>%s
+                    """,
+                    (self.tenant_id, config_key, row["id"]),
+                )
+            else:
+                cur.execute(
+                    """
+                    INSERT INTO sys_param (
+                        config_name, config_key, config_value, config_type, status, description,
+                        created_time, updated_time, uuid, is_deleted, tenant_id
+                    ) VALUES (%s,%s,%s,1,0,%s,NOW(),NOW(),UUID(),0,%s)
+                    """,
+                    (
+                        payload["config_name"],
+                        config_key,
+                        payload["config_value"],
+                        payload["description"],
+                        self.tenant_id,
+                    ),
+                )
+
+        keep_keys = sorted(SMARTQA_REQUIRED_PARAMS)
+        placeholders = ",".join(["%s"] * len(keep_keys))
+        cur.execute(
+            f"""
+            DELETE FROM sys_param
+            WHERE tenant_id=%s AND config_key NOT IN ({placeholders})
+            """,
+            [self.tenant_id, *keep_keys],
+        )
+        if cur.rowcount:
+            actions.append(f"deleted non-SmartQA sys_param rows: {cur.rowcount}")
+        return {"actions": actions}
 
     def _cleanup_template_menus(self, cur: pymysql.cursors.DictCursor, keep_menu_ids: list[int]) -> int:
         if not keep_menu_ids:

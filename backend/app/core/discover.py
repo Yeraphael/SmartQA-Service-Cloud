@@ -9,7 +9,7 @@
   （仅字母数字下划线、不以数字开头；不要使用中划线、空格、中文目录名等）。
 - 每一级目录应可作为包导入：通常需有 ``__init__.py``（或符合 namespace package 规则）。
 - 在 ``controller.py`` 的**模块顶层**定义 ``APIRouter`` 实例并赋值给变量
-  （如 ``DemoRouter = APIRouter(...)``）；定义在函数内部的 router **不会被**扫描到。
+  （如 ``SmartQARouter = APIRouter(...)``）；定义在函数内部的 router **不会被**扫描到。
 
 路由前缀：顶级目录 ``module_xxx`` 映射为容器前缀 ``/xxx``（去掉前缀 ``module_`` 共 7 个字符）。
 

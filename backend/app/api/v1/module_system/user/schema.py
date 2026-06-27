@@ -15,7 +15,7 @@ from app.api.v1.module_platform.menu.schema import MenuTreeOutSchema
 from app.api.v1.module_system.role.schema import RoleOutSchema
 from app.common.enums import QueueEnum
 from app.core.base_params import BaseQueryParam, TenantByQueryParam, UserByQueryParam
-from app.core.base_schema import BaseSchema, CommonSchema, TenantBySchema, UserBySchema
+from app.core.base_schema import BaseSchema, TenantBySchema, UserBySchema
 from app.core.validator import email_validator, mobile_validator
 
 
@@ -212,10 +212,8 @@ class UserCreateSchema(CurrentUserUpdateSchema):
     status: int = Field(default=0, ge=0, le=1, description="状态(0:启动 1:停用)")
     description: str | None = Field(default=None, max_length=255, description="备注")
     is_superuser: bool | None = Field(default=False, description="是否超管")
-    dept_id: int | None = Field(default=None, description="部门ID")
     tenant_id: int | None = Field(default=None, description="租户ID，仅平台管理员创建时可指定")
     role_ids: list[int] | None = Field(default=[], description="角色ID列表")
-    position_ids: list[int] | None = Field(default=[], description="岗位ID列表")
 
     @field_validator("status")
     @classmethod
@@ -257,9 +255,7 @@ class UserUpdateSchema(CurrentUserUpdateSchema):
     username: str | None = Field(default=None, max_length=32, description="用户名")
     status: int | None = Field(default=None, ge=0, le=1, description="状态(0:启动 1:停用)")
     description: str | None = Field(default=None, max_length=255, description="备注")
-    dept_id: int | None = Field(default=None, description="部门ID")
     role_ids: list[int] | None = Field(default=[], description="角色ID列表")
-    position_ids: list[int] | None = Field(default=[], description="岗位ID列表")
 
     @field_validator("status")
     @classmethod
@@ -295,9 +291,6 @@ class UserOutSchema(UserUpdateSchema, BaseSchema, UserBySchema, TenantBySchema):
         exclude=True,
         description="创建入参使用；列表/详情出参见 tenant",
     )
-    dept_name: str | None = Field(default=None, description="部门名称")
-    dept: CommonSchema | None = Field(default=None, description="部门")
-    positions: list[CommonSchema] | None = Field(default=[], description="岗位")
     roles: list[RoleOutSchema] | None = Field(default=[], description="角色")
     menus: list[MenuTreeOutSchema] | None = Field(default=[], description="菜单")
 
@@ -311,7 +304,7 @@ class UserQueryParam(BaseQueryParam, UserByQueryParam, TenantByQueryParam):
     - 时间范围（BaseQueryParam）
     - 创建人/更新人筛选（UserByQueryParam）
     - 租户筛选（TenantByQueryParam）
-    - 业务字段：用户名、名称、手机号、邮箱、部门、状态
+    - 业务字段：用户名、名称、手机号、邮箱、状态
     """
 
     username: str | None = Query(None, description="用户名")
@@ -322,7 +315,6 @@ class UserQueryParam(BaseQueryParam, UserByQueryParam, TenantByQueryParam):
         description="邮箱",
         pattern=r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$",
     )
-    dept_id: int | None = Query(None, description="部门ID")
     status: int | None = Query(None, description="是否可用")
 
     def __post_init__(self) -> None:
@@ -332,7 +324,5 @@ class UserQueryParam(BaseQueryParam, UserByQueryParam, TenantByQueryParam):
             self.mobile = (QueueEnum.like.value, self.mobile)
         if self.email:
             self.email = (QueueEnum.like.value, self.email)
-        if self.dept_id:
-            self.dept_id = (QueueEnum.eq.value, self.dept_id)
         if self.status:
             self.status = (QueueEnum.eq.value, self.status)

@@ -1,5 +1,7 @@
 """Sync source database (aizhijian) into SmartQA ODS/DWD."""
 
+import asyncio
+
 from app.core.base_schema import AuthSchema
 from app.plugin.module_smartqa.pipeline import SmartQAPipeline, get_source_config
 
@@ -17,6 +19,10 @@ class SourceDbSyncService:
             tenant_id=self.auth.tenant_id if self.auth else 1,
             created_id=self.auth.user_id if self.auth else None,
         )
+        return await asyncio.to_thread(self._run_full_sync, pipeline, build, seed, truncate_dwd)
+
+    @staticmethod
+    def _run_full_sync(pipeline: SmartQAPipeline, build: bool, seed: bool, truncate_dwd: bool) -> dict:
         sync_result = pipeline.full_sync()
         build_result = pipeline.rebuild_warehouse(sync_result["batch_id"], truncate_dwd=truncate_dwd) if build else {}
         seed_result = pipeline.seed_defaults() if seed else {}

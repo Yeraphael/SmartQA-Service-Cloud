@@ -128,13 +128,8 @@ export default ({ mode }: { mode: string }) => {
         output: {
           manualChunks(id) {
             if (!id.includes("node_modules")) return;
-            if (id.includes("echarts") || id.includes("zrender")) return "echarts";
             if (id.includes("element-plus")) return "element-plus";
-            if (id.includes("exceljs")) return "exceljs";
             if (id.includes("@iconify-json")) return "iconify-icons";
-            if (id.includes("xlsx")) return "xlsx";
-            if (id.includes("crypto-js")) return "crypto";
-            if (id.includes("js-beautify")) return "beautify";
             if (id.includes("dayjs")) return "dayjs";
             if (
               id.includes("vue/") ||
@@ -227,7 +222,6 @@ export default ({ mode }: { mode: string }) => {
         "vue",
         "vue-router",
         "vue-i18n",
-        "vue-draggable-plus",
         "element-plus",
         "@element-plus/icons-vue",
         "element-plus/es",
@@ -236,23 +230,11 @@ export default ({ mode }: { mode: string }) => {
         "pinia",
         "axios",
         "@vueuse/core",
-        "exceljs",
-        "echarts/core",
-        "echarts/renderers",
-        "echarts/charts",
-        "echarts/components",
         "nprogress",
         "qs",
         "path-to-regexp",
-        "path-browserify",
         "@iconify/vue",
-        "xlsx",
         "dompurify",
-        "js-beautify",
-        "crypto-js",
-        "file-saver",
-        "mitt",
-        "ohash",
         "pinia-plugin-persistedstate",
         ...elementPlusStyleIncludes(),
       ],

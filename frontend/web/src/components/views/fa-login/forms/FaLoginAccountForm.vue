@@ -12,7 +12,7 @@
     >
       <ElFormItem>
         <ElSelect
-          :model-value="demoAccountKey"
+          :model-value="portalAccountKey"
           class="w-full"
           :placeholder="$t('login.quickSelectAccount')"
           @update:model-value="$emit('setupAccount', $event as AccountKey)"
@@ -160,7 +160,7 @@ interface Props {
   rules: FormRules;
   captchaState: CaptchaInfo;
   codeLoading: boolean;
-  demoAccountKey: AccountKey;
+  portalAccountKey: AccountKey;
   accounts: Account[];
   formKey: number | string;
   isDark: boolean;

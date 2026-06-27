@@ -31,16 +31,13 @@ export function useHeaderBar() {
   // 获取顶部栏配置
   const headerBarConfigRef = computed<HeaderBarFeatureConfig>(() => headerBarConfig);
 
-  // 从 store 获取相关状态（含旧版持久化开关：菜单搜索、全屏、字号、通知等）
+  // 从 store 获取相关状态
   const {
     showMenuButton,
-    showFastEnter,
     showRefreshButton,
     showCrumbs,
     showLanguage,
-    showMenuSearch,
     showFullscreen,
-    showSizeSelect,
   } = storeToRefs(settingStore);
 
   /**
@@ -71,19 +68,9 @@ export function useHeaderBar() {
     return isFeatureEnabled("refreshButton") && showRefreshButton.value;
   });
 
-  // 检查快速入口是否显示
-  const shouldShowFastEnter = computed(() => {
-    return isFeatureEnabled("fastEnter") && showFastEnter.value;
-  });
-
   // 检查面包屑是否显示
   const shouldShowBreadcrumb = computed(() => {
     return isFeatureEnabled("breadcrumb") && showCrumbs.value;
-  });
-
-  // 全局搜索：新版 ArtGlobalSearch 体验更好，显示条件 = 配置开启 ∧ 旧版「菜单搜索」开关
-  const shouldShowGlobalSearch = computed(() => {
-    return isFeatureEnabled("globalSearch") && showMenuSearch.value;
   });
 
   const shouldShowFullscreen = computed(() => {
@@ -95,11 +82,6 @@ export function useHeaderBar() {
     return isFeatureEnabled("language") && showLanguage.value;
   });
 
-  /** 布局组件尺寸（旧版顶栏独立入口） */
-  const shouldShowSizeSelect = computed(() => {
-    return isFeatureEnabled("sizeSelect") && showSizeSelect.value;
-  });
-
   // 检查设置面板是否显示
   const shouldShowSettings = computed(() => {
     return isFeatureEnabled("settings");
@@ -108,12 +90,6 @@ export function useHeaderBar() {
   // 检查主题切换是否显示
   const shouldShowThemeToggle = computed(() => {
     return isFeatureEnabled("themeToggle");
-  });
-
-  // 获取快速入口的最小宽度
-  const fastEnterMinWidth = computed(() => {
-    const config = getFeatureConfig("fastEnter");
-    return (config as Record<string, any>)?.minWidth || 1200;
   });
 
   /**
@@ -177,17 +153,11 @@ export function useHeaderBar() {
     // 显示状态计算属性
     shouldShowMenuButton, // 是否显示菜单按钮
     shouldShowRefreshButton, // 是否显示刷新按钮
-    shouldShowFastEnter, // 是否显示快速入口
     shouldShowBreadcrumb, // 是否显示面包屑
-    shouldShowGlobalSearch, // 是否显示全局搜索
     shouldShowFullscreen, // 是否显示全屏按钮
     shouldShowLanguage, // 是否显示语言切换
-    shouldShowSizeSelect, // 是否显示组件尺寸切换
     shouldShowSettings, // 是否显示设置面板
     shouldShowThemeToggle, // 是否显示主题切换
-
-    // 配置相关
-    fastEnterMinWidth, // 快速入口最小宽度
 
     // 方法
     isFeatureEnabled, // 检查功能是否启用

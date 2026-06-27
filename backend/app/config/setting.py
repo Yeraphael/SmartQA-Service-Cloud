@@ -131,17 +131,9 @@ class Settings(BaseSettings):
     IP_LOCATION_ENABLE: bool = True  # 是否启用 IP 归属地查询（登录时对外发起 HTTP 请求）
 
     # ================================================= #
-    # ********************* 日志配置 ******************* #
+    # ******************* 请求守卫配置 **************** #
     # ================================================= #
-    OPERATION_LOG_RECORD: bool = True  # 是否记录操作日志
-    OPERATION_RECORD_METHOD: list[str] = [
-        "POST",
-        "PUT",
-        "PATCH",
-        "DELETE",
-        "HEAD",
-        "OPTIONS",
-    ]  # 需要记录的请求方法
+    REQUEST_GUARD_ENABLE: bool = True  # 是否启用 IP 黑名单 / 写保护拦截
 
     # ================================================= #
     # ******************* Gzip压缩配置 ******************* #
@@ -205,8 +197,13 @@ class Settings(BaseSettings):
     SMARTQA_QC_TASK_CONCURRENCY: int = 2
     SMARTQA_SYNC_OVERLAP_MINUTES: int = 120
     SMARTQA_SHOP_RECORD_ROLLING_DAYS: int = 7
+    SMARTQA_SOURCE_SYNC_TIMES: str = "07:30,12:30,20:30"
+    SMARTQA_DAILY_QC_TIME: str = "23:00"
+    SMARTQA_DAILY_QC_SAMPLE_LIMIT: int = 100
+    SMARTQA_DAILY_QC_EXECUTE: bool = True
+    SMARTQA_SCHEDULER_TIMEZONE: str = "Asia/Shanghai"
     PLUGIN_MODULE_ALLOWLIST: list[str] = ["module_smartqa"]
-    SCHEDULER_ENABLE: bool = False
+    SCHEDULER_ENABLE: bool = True
 
     # ================================================= #
     # ******************* 请求限制配置 ****************** #
@@ -225,7 +222,7 @@ class Settings(BaseSettings):
         # 由前置 Nginx / 反向代理通过 add_header 设置，避免应用层 BaseHTTPMiddleware 开销。
         MIDDLEWARES: list[str | None] = [
             "app.core.middlewares.CustomCORSMiddleware" if self.CORS_ORIGIN_ENABLE else None,
-            "app.core.middlewares.RequestLogMiddleware" if self.OPERATION_LOG_RECORD else None,
+            "app.core.middlewares.RequestGuardMiddleware" if self.REQUEST_GUARD_ENABLE else None,
             "app.core.middlewares.CustomGZipMiddleware" if self.GZIP_ENABLE else None,
             "app.core.middlewares.CorrelationIdMiddleware",  # 请求上下文
             "app.core.middlewares.TenantMiddleware",  # 租户上下文（需 JWT）

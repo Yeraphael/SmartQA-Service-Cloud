@@ -34,5 +34,23 @@
     "status": 0,
     "description": "禁止访问的IP列表",
     "tenant_id": 1
+  },
+  {
+    "config_name": "访问IP白名单",
+    "config_key": "ip_white_list",
+    "config_value": "[]",
+    "config_type": true,
+    "status": 0,
+    "description": "写保护开启时允许写操作的IP列表",
+    "tenant_id": 1
+  },
+  {
+    "config_name": "写保护开关",
+    "config_key": "write_guard_enable",
+    "config_value": "false",
+    "config_type": true,
+    "status": 0,
+    "description": "启用后非白名单IP禁止写操作",
+    "tenant_id": 1
   }
 ]

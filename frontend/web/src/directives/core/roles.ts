@@ -11,23 +11,6 @@
  * - DOM 控制 - 无权限时自动移除元素，而非隐藏
  * - 响应式更新 - 角色变化时自动更新元素状态
  *
- * ## 使用示例
- *
- * ```vue
- * <template>
- *   <!-- 单个角色 - 只有超级管理员可见 -->
- *   <el-button v-roles="'R_SUPER'">超级管理员功能</el-button>
- *
- *   <!-- 多个角色 - 超级管理员或普通管理员可见 -->
- *   <el-button v-roles="['R_SUPER', 'R_ADMIN']">管理员功能</el-button>
- *
- *   <!-- 应用到任意元素 -->
- *   <div v-roles="['R_SUPER', 'R_ADMIN', 'R_USER']">
- *     所有登录用户可见的内容
- *   </div>
- * </template>
- * ```
- *
  * ## 权限逻辑
  *
  * - 用户角色从 userStore.getUserInfo.roles 获取

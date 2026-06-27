@@ -7,8 +7,22 @@
       <ElButton :disabled="!selected.length" :loading="executing" type="success" icon="VideoPlay" @click="executeTasks">
         执行选中
       </ElButton>
+      <ElInputNumber v-model="sampleLimit" :min="1" :max="1000" :step="10" controls-position="right" class="sample-input" />
+      <ElButton :loading="sampling" type="warning" icon="Aim" @click="createDailySample(false)">今日抽检</ElButton>
+      <ElButton :loading="samplingExecuting" type="danger" icon="Connection" @click="createDailySample(true)">
+        抽检并执行
+      </ElButton>
       <ElButton :loading="loading" icon="Refresh" @click="loadData">刷新</ElButton>
     </div>
+
+    <ElRow v-if="sampleResult" :gutter="12">
+      <ElCol v-for="item in sampleMetrics" :key="item.label" :xs="12" :sm="8" :lg="4">
+        <ElCard shadow="never" class="metric-card">
+          <div class="metric-label">{{ item.label }}</div>
+          <div class="metric-value">{{ item.value }}</div>
+        </ElCard>
+      </ElCol>
+    </ElRow>
 
     <ElCard shadow="never">
       <ElTable :loading="loading" :data="tasks" row-key="id" height="640" @selection-change="selected = $event">
@@ -32,16 +46,29 @@
 
 <script setup lang="ts">
 import { ElMessage } from "element-plus";
-import { onMounted, ref } from "vue";
-import SmartQAAPI, { type QcTask } from "@/api/module_smartqa";
+import { computed, onMounted, ref } from "vue";
+import SmartQAAPI, { type QcDailySampleResult, type QcTask } from "@/api/module_smartqa";
 
 const loading = ref(false);
 const creating = ref(false);
 const executing = ref(false);
+const sampling = ref(false);
+const samplingExecuting = ref(false);
 const tasks = ref<QcTask[]>([]);
 const selected = ref<QcTask[]>([]);
 const conversationIds = ref("");
 const ruleVersion = ref("smartqa-p0-20260625");
+const sampleLimit = ref(100);
+const sampleResult = ref<QcDailySampleResult>();
+
+const sampleMetrics = computed(() => [
+  { label: "抽检会话", value: sampleResult.value?.selected_count ?? 0 },
+  { label: "覆盖客服", value: `${sampleResult.value?.covered_staff_count ?? 0}/${sampleResult.value?.staff_count ?? 0}` },
+  { label: "新任务", value: sampleResult.value?.create_result.created ?? 0 },
+  { label: "已存在", value: sampleResult.value?.create_result.skipped ?? 0 },
+  { label: "执行成功", value: sampleResult.value?.execute_result?.success ?? "-" },
+  { label: "执行失败", value: sampleResult.value?.execute_result?.failed ?? "-" },
+]);
 
 function statusType(status: string) {
   if (status === "success") return "success";
@@ -96,6 +123,28 @@ async function executeTasks() {
   }
 }
 
+async function createDailySample(execute: boolean) {
+  if (execute) {
+    samplingExecuting.value = true;
+  } else {
+    sampling.value = true;
+  }
+  try {
+    const res = await SmartQAAPI.dailyQcSample({
+      limit: sampleLimit.value,
+      execute,
+      rule_version: ruleVersion.value,
+      model_name: "qwen3.7-plus",
+    });
+    sampleResult.value = res.data.data;
+    ElMessage.success(execute ? "抽检执行完成" : "抽检任务已创建");
+    await loadData();
+  } finally {
+    sampling.value = false;
+    samplingExecuting.value = false;
+  }
+}
+
 onMounted(loadData);
 </script>
 
@@ -121,5 +170,24 @@ onMounted(loadData);
 
 .version-input {
   width: 220px;
+}
+
+.sample-input {
+  width: 120px;
+}
+
+.metric-card {
+  border-radius: 8px;
+}
+
+.metric-label {
+  color: var(--el-text-color-secondary);
+  font-size: 13px;
+}
+
+.metric-value {
+  margin-top: 8px;
+  font-size: 22px;
+  font-weight: 700;
 }
 </style>
