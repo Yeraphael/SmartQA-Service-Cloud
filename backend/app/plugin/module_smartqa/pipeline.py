@@ -577,6 +577,72 @@ class SmartQAPipeline:
             "execute_result": execute_result,
         }
 
+    def run_short_qc_sample(
+        self,
+        limit: int = 40,
+        max_messages: int = 20,
+        execute: bool = True,
+        model_name: str | None = None,
+        rule_version: str = DEFAULT_RULE_VERSION,
+    ) -> dict[str, Any]:
+        """Run a real QC sample on shorter conversations while covering every staff."""
+
+        sample = self.select_short_qc_sample(limit=limit, max_messages=max_messages, rule_version=rule_version)
+        create_result = self.create_qc_tasks(
+            conversation_ids=sample["conversation_ids"],
+            model_name=model_name,
+            rule_version=rule_version,
+        )
+        execute_result: dict[str, Any] = {}
+        task_ids = create_result.get("task_ids") or []
+        if execute and task_ids:
+            execute_result = self.execute_qc_tasks(limit=len(task_ids), task_ids=task_ids)
+        return {
+            "limit": limit,
+            "max_messages": max_messages,
+            "execute": execute,
+            "selected_count": len(sample["conversation_ids"]),
+            "staff_count": sample["staff_count"],
+            "covered_staff_count": sample["covered_staff_count"],
+            "expanded_for_staff_coverage": sample["expanded_for_staff_coverage"],
+            "conversation_ids": sample["conversation_ids"],
+            "staff_ids": sample["staff_ids"],
+            "create_result": create_result,
+            "execute_result": execute_result,
+        }
+
+    def run_staff_short_qc_sample(
+        self,
+        staff_ids: list[int],
+        per_staff: int = 1,
+        max_messages: int = 20,
+        execute: bool = True,
+        model_name: str | None = None,
+        rule_version: str = DEFAULT_RULE_VERSION,
+    ) -> dict[str, Any]:
+        """Run short real conversations for specific staff ids."""
+
+        conversation_ids = self.select_staff_short_conversations(
+            staff_ids=staff_ids,
+            per_staff=per_staff,
+            max_messages=max_messages,
+            rule_version=rule_version,
+        )
+        create_result = self.create_qc_tasks(conversation_ids=conversation_ids, model_name=model_name, rule_version=rule_version)
+        execute_result: dict[str, Any] = {}
+        task_ids = create_result.get("task_ids") or []
+        if execute and task_ids:
+            execute_result = self.execute_qc_tasks(limit=len(task_ids), task_ids=task_ids)
+        return {
+            "staff_ids": staff_ids,
+            "per_staff": per_staff,
+            "max_messages": max_messages,
+            "execute": execute,
+            "conversation_ids": conversation_ids,
+            "create_result": create_result,
+            "execute_result": execute_result,
+        }
+
     def select_daily_qc_sample(self, limit: int = 100, rule_version: str = DEFAULT_RULE_VERSION) -> dict[str, Any]:
         """Pick a daily QC sample. First pass covers each staff, second pass fills by recency."""
 
@@ -650,6 +716,119 @@ class SmartQAPipeline:
             "expanded_for_staff_coverage": effective_limit > limit,
         }
 
+    def select_short_qc_sample(self, limit: int = 40, max_messages: int = 20, rule_version: str = DEFAULT_RULE_VERSION) -> dict[str, Any]:
+        """Pick shorter real conversations, first covering every staff, then filling by recency."""
+
+        limit = max(1, int(limit or 40))
+        max_messages = max(2, int(max_messages or 20))
+        with mysql_conn(self.target_config) as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT prompt_version FROM qc_rule_version WHERE rule_version=%s AND is_deleted=0", (rule_version,))
+                version = cur.fetchone()
+                if not version:
+                    raise RuntimeError(f"Rule version not found: {rule_version}")
+                prompt_version = version["prompt_version"]
+                cur.execute(
+                    """
+                    SELECT c.id, c.staff_id, c.start_time, c.message_count
+                    FROM dwd_qn_conversation c
+                    WHERE c.is_deleted=0
+                      AND c.staff_id IS NOT NULL
+                      AND c.message_count BETWEEN 2 AND %s
+                      AND NOT EXISTS (
+                          SELECT 1
+                          FROM qc_task t
+                          WHERE t.conversation_id=c.id
+                            AND t.conversation_data_hash=c.data_hash
+                            AND t.rule_version=%s
+                            AND t.prompt_version=%s
+                            AND t.status='success'
+                            AND t.is_deleted=0
+                      )
+                    ORDER BY c.message_count ASC, c.start_time DESC, c.id DESC
+                    """,
+                    (max_messages, rule_version, prompt_version),
+                )
+                candidates = list(cur.fetchall())
+
+        staff_ids = sorted({row["staff_id"] for row in candidates if row.get("staff_id") is not None})
+        effective_limit = max(limit, len(staff_ids))
+        selected: list[dict[str, Any]] = []
+        selected_ids: set[int] = set()
+        covered_staff: set[int] = set()
+
+        for row in candidates:
+            staff_id = row.get("staff_id")
+            if staff_id is None or staff_id in covered_staff:
+                continue
+            selected.append(row)
+            selected_ids.add(row["id"])
+            covered_staff.add(staff_id)
+
+        for row in candidates:
+            if len(selected) >= effective_limit:
+                break
+            if row["id"] in selected_ids:
+                continue
+            selected.append(row)
+            selected_ids.add(row["id"])
+
+        return {
+            "conversation_ids": [row["id"] for row in selected],
+            "staff_ids": staff_ids,
+            "staff_count": len(staff_ids),
+            "covered_staff_count": len(covered_staff),
+            "expanded_for_staff_coverage": effective_limit > limit,
+        }
+
+    def select_staff_short_conversations(
+        self,
+        staff_ids: list[int],
+        per_staff: int = 1,
+        max_messages: int = 20,
+        rule_version: str = DEFAULT_RULE_VERSION,
+    ) -> list[int]:
+        """Pick short, not-yet-successful conversations for specific staff."""
+
+        staff_ids = sorted({int(staff_id) for staff_id in staff_ids if staff_id})
+        if not staff_ids:
+            return []
+        per_staff = max(1, int(per_staff or 1))
+        max_messages = max(2, int(max_messages or 20))
+        with mysql_conn(self.target_config) as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT prompt_version FROM qc_rule_version WHERE rule_version=%s AND is_deleted=0", (rule_version,))
+                version = cur.fetchone()
+                if not version:
+                    raise RuntimeError(f"Rule version not found: {rule_version}")
+                prompt_version = version["prompt_version"]
+                selected: list[int] = []
+                for staff_id in staff_ids:
+                    cur.execute(
+                        """
+                        SELECT c.id
+                        FROM dwd_qn_conversation c
+                        WHERE c.is_deleted=0
+                          AND c.staff_id=%s
+                          AND c.message_count BETWEEN 2 AND %s
+                          AND NOT EXISTS (
+                              SELECT 1
+                              FROM qc_task t
+                              WHERE t.conversation_id=c.id
+                                AND t.conversation_data_hash=c.data_hash
+                                AND t.rule_version=%s
+                                AND t.prompt_version=%s
+                                AND t.status='success'
+                                AND t.is_deleted=0
+                          )
+                        ORDER BY c.message_count ASC, c.start_time DESC, c.id DESC
+                        LIMIT %s
+                        """,
+                        (staff_id, max_messages, rule_version, prompt_version, per_staff),
+                    )
+                    selected.extend(row["id"] for row in cur.fetchall())
+        return selected
+
     def execute_qc_tasks(self, limit: int = 1, task_ids: list[int] | None = None) -> dict[str, Any]:
         """Execute QC tasks against Ali/OpenAI-compatible endpoint."""
         from openai import OpenAI
@@ -663,7 +842,9 @@ class SmartQAPipeline:
         for logger_name in ["openai", "httpx", "httpcore"]:
             logging.getLogger(logger_name).setLevel(logging.WARNING)
 
-        client = OpenAI(api_key=cfg["api_key"], base_url=cfg["base_url"])
+        self.reset_stale_running_tasks(minutes=30)
+
+        client = OpenAI(api_key=cfg["api_key"], base_url=cfg["base_url"], timeout=90.0)
         ok = 0
         failed = 0
         results: list[dict[str, Any]] = []
@@ -781,6 +962,30 @@ class SmartQAPipeline:
                     results.append({"task_id": task["id"], "status": "failed", "error": str(exc)})
 
         return {"success": ok, "failed": failed, "results": results}
+
+    def reset_stale_running_tasks(self, minutes: int = 30, all_running: bool = False) -> int:
+        """Recover interrupted model tasks so the next batch can retry them."""
+
+        minutes = max(int(minutes or 30), 1)
+        time_filter = "" if all_running else "AND TIMESTAMPDIFF(MINUTE, updated_time, NOW()) >= %s"
+        params: tuple[Any, ...] = () if all_running else (minutes,)
+        with mysql_conn(self.target_config) as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    f"""
+                    UPDATE qc_task
+                    SET status='pending',
+                        error_message=CONCAT(COALESCE(error_message, ''), '\n自动恢复超时运行任务'),
+                        updated_time=NOW()
+                    WHERE is_deleted=0
+                      AND status='running'
+                      {time_filter}
+                    """,
+                    params,
+                )
+                changed = cur.rowcount
+            conn.commit()
+        return changed
 
     def target_counts(self) -> dict[str, int]:
         tables = [
@@ -1569,7 +1774,7 @@ class SmartQAPipeline:
         ]
         staff_children = [
             ("我的工作台", "SmartQAMyDashboard", "my-dashboard", "module_smartqa/my-dashboard/index", "ri:home-smile-line"),
-            ("我的会话", "SmartQAMyConversations", "my-conversations", "module_smartqa/my-conversations/index", "ri:message-2-line"),
+            ("我的意向客户", "SmartQAMyConversations", "my-conversations", "module_smartqa/my-conversations/index", "ri:user-search-line"),
             ("我的质检结果", "SmartQAMyQcResults", "my-qc-results", "module_smartqa/my-qc-results/index", "ri:file-list-3-line"),
             ("我的改进建议", "SmartQAMyImprovements", "my-improvements", "module_smartqa/my-improvements/index", "ri:lightbulb-flash-line"),
         ]
@@ -1672,17 +1877,31 @@ class SmartQAPipeline:
 
     def _ensure_default_rules(self, cur: pymysql.cursors.DictCursor) -> int:
         prompt = (
-            "请对以下千牛客服会话做质检。\n"
+            "请对以下千牛客服会话做客服质检和客户意向分析。你必须按 SmartQA 客服质检与客户意向 BI 开发规则执行。\n"
             "会话ID: {conversation_id}\n"
             "千牛状态: {qn_status}\n\n"
             "规则:\n{rules}\n\n"
             "聊天记录:\n{messages}\n\n"
-            "请只输出 JSON，结构为: "
-            "{\"score\":0-100,\"result_level\":\"pass|fail\",\"risk_level\":\"none|low|medium|high|critical\","
-            "\"summary\":\"简要结论\",\"dimension_scores\":{},\"confidence\":0-1,"
-            "\"issues\":[{\"rule_code\":\"\",\"severity\":\"low|medium|high|critical\",\"title\":\"\","
-            "\"reason\":\"\",\"suggested_action\":\"\",\"suggested_reply\":\"\",\"deduction_score\":0,"
-            "\"evidence_message_ids\":[\"msg_xxx\"]}]}"
+            "业务口径：先服务，再承接；能留资是加分；只留资不服务才扣分。不要把客服询问微信/电话/手机号判为违规。\n"
+            "请只输出合法 JSON，不输出 Markdown。结构必须为："
+            "{"
+            "\"conversation_id\":\"{conversation_id}\","
+            "\"staff_quality\":{\"score\":0-100,\"level\":\"excellent|pass|fail\","
+            "\"risk_level\":\"none|low|medium|high|critical\",\"dimension_scores\":{}},"
+            "\"customer_intent_detail\":{\"customer_id\":\"\",\"intent_score\":0-100,"
+            "\"intent_tier\":\"H1|H2|H3|H4|L\",\"lifecycle_stage\":\"CL01|CL02|CL03|CL04|CL05|CL06|CL07|CL08|CL09|CL10\","
+            "\"need_type\":\"normal|custom|bulk|after_sale|quote|unknown\",\"need_summary\":\"\","
+            "\"intent_reasons\":[{\"reason_code\":\"\",\"reason_text\":\"\",\"evidence_message_ids\":[\"msg_xxx\"]}],"
+            "\"missing_infos\":[],\"tags\":[],"
+            "\"contact_status\":{\"contact_requested\":false,\"contact_provided\":false,\"contact_type\":null,"
+            "\"xianfa_handoff_status\":\"none|asked|provided|ready|matched|converted|failed\","
+            "\"request_message_ids\":[],\"provided_message_ids\":[]},"
+            "\"next_action\":\"\",\"suggested_reply\":\"\"},"
+            "\"issues\":[{\"rule_code\":\"\",\"severity\":\"low|medium|high|critical\",\"deduction_score\":0,"
+            "\"title\":\"\",\"reason\":\"\",\"customer_impact\":\"\",\"evidence_message_ids\":[\"msg_xxx\"],"
+            "\"suggested_action\":\"\",\"suggested_reply\":\"\"}],"
+            "\"summary\":\"\",\"confidence\":0-1}"
+            "证据要求：每个扣分问题、H1/H2 判断、意向原因、联系方式询问/提供都必须绑定真实 message_id；无证据不要强判。"
         )
         cur.execute(
             """
@@ -1695,11 +1914,25 @@ class SmartQAPipeline:
             (DEFAULT_PROMPT_VERSION, prompt, self.tenant_id),
         )
         rules = [
-            ("P0_SERVICE_ATTITUDE", "服务态度", "service", "客服不得辱骂、敷衍、冷漠、不耐烦；若明显伤害客户体验需扣分。", 20, "high"),
-            ("P0_RESPONSE_DELAY", "响应时效", "response", "客户提出问题后，客服长时间未回应或连续忽略关键问题需扣分。", 10, "medium"),
-            ("P0_ACCURACY", "信息准确", "accuracy", "客服不得给出明显错误、前后矛盾或无法兑现的承诺。", 20, "high"),
-            ("P0_CONVERSION", "成交引导", "conversion", "在客户有购买意向时，应适度推进下单/付款，不应机械闲聊或错失明显机会。", 10, "medium"),
-            ("P0_COMPLIANCE", "合规风险", "compliance", "不得诱导违规、承诺平台外交易、泄露隐私或作出高风险表述。", 30, "critical"),
+            ("SQ01_RESPONSE_TIMELY", "响应及时性", "staff_quality", "首响、平均响应、关键问题是否超时；长时间未回复或连续忽略需扣分。", 12, "medium"),
+            ("SQ02_RECEPTION_COMPLETE", "接待完整度", "staff_quality", "检查开场、承接、收尾、下一步是否完整；只发模板或客户问完就断需扣分。", 8, "medium"),
+            ("SQ03_NEED_PROBE", "需求识别与追问", "staff_quality", "客户有定制/批量/场景需求时，应追问商品、场景、尺寸、数量、预算、时间。", 14, "medium"),
+            ("SQ04_PRODUCT_PROFESSIONAL", "商品与方案专业度", "staff_quality", "规格、材质、承重、物流、定制、替代方案解释要专业，含糊或只发链接需扣分。", 14, "medium"),
+            ("SQ05_SOLUTION_COMPLETE", "问题解决完成度", "staff_quality", "客户核心问题必须正面回答；价格、尺寸、物流等未答到点需扣分。", 14, "high"),
+            ("SQ06_CONVERSION_CONTACT", "转化推进与留资承接", "staff_quality", "高意向客户应报价、引导下单、自然询问联系方式或安排先发承接；合理留资是加分。", 16, "high"),
+            ("SQ07_ATTITUDE_WARMTH", "情绪态度与沟通温度", "staff_quality", "礼貌、耐心、自然，不冷漠不攻击；敷衍、不耐烦、冲突需扣分。", 8, "medium"),
+            ("SQ08_OBJECTION_HANDLING", "异议处理能力", "staff_quality", "客户说贵、再看看、不放心、比价时，应共情、解释价值、给选择。", 6, "medium"),
+            ("SQ09_COMPLIANCE_RISK", "合规与风险控制", "staff_quality", "不得虚假承诺、绝对化表达、隐私过采、冲突升级；询问联系方式本身不是违规。", 6, "critical"),
+            ("SQ10_HANDOFF_RECORD", "数据记录与交接", "staff_quality", "客户给联系方式后应确认、记录并进入承接；未确认未交接需扣分。", 2, "medium"),
+            ("CI01_NEED_CLARITY", "需求明确度", "customer_intent", "客户明确要买、定制、某规格、数量等为高意向信号。", 18, "low"),
+            ("CI02_USAGE_SCENE", "场景用途清晰度", "customer_intent", "阳台、露台、庭院、工程、店铺、装修等清晰场景提高意向分。", 10, "low"),
+            ("CI03_SPEC_QUANTITY", "规格数量完整度", "customer_intent", "尺寸、数量、材质、承重、图片、图纸越明确意向越高。", 12, "low"),
+            ("CI04_BUDGET_PRICE", "预算与价格接受度", "customer_intent", "明确预算、接受报价、报价后继续问加分；只砍价或预算不匹配减分。", 15, "low"),
+            ("CI05_URGENCY", "时间紧迫度", "customer_intent", "今天、明天、本周、装修、开业、工期等近期节点提高优先级。", 10, "low"),
+            ("CI06_INTERACTION_DEPTH", "互动投入度", "customer_intent", "多轮追问、主动发图、主动回复、问细节说明投入高。", 10, "low"),
+            ("CI07_TRUST_SIGNAL", "信任与品牌认可", "customer_intent", "认可质量、款式、评价、朋友推荐等提高意向；强不信任减分。", 8, "low"),
+            ("CI08_CONTACT_WILLINGNESS", "联系方式/微信承接意愿", "customer_intent", "主动留微信/电话、同意加微信属于强意向；拒绝沟通则降低。", 10, "low"),
+            ("CI09_ORDER_SIGNAL", "成交动作信号", "customer_intent", "问怎么拍、发货、运费、地址、发票、付款等为成交信号。", 7, "low"),
         ]
         for code, name, category, standard, score, severity in rules:
             cur.execute(
@@ -1714,6 +1947,16 @@ class SmartQAPipeline:
                 """,
                 (code, name, category, standard, score, severity, self.tenant_id),
             )
+        rule_codes = [rule[0] for rule in rules]
+        placeholders = ",".join(["%s"] * len(rule_codes))
+        cur.execute(
+            f"""
+            UPDATE qc_rule
+            SET status='retired', is_deleted=1, deleted_time=NOW(), updated_time=NOW()
+            WHERE tenant_id=%s AND is_deleted=0 AND rule_code NOT IN ({placeholders})
+            """,
+            (self.tenant_id, *rule_codes),
+        )
         rule_snapshot = {
             code: {
                 "rule_name": name,
@@ -1821,19 +2064,50 @@ class SmartQAPipeline:
 
     def _validate_qc_result(self, result_json: dict[str, Any], conversation_data: dict[str, Any]) -> None:
         existing_ids = {msg["message_id"] for msg in conversation_data["messages"]}
-        if "score" not in result_json:
-            result_json["score"] = 100
-        if "result_level" not in result_json:
-            result_json["result_level"] = "pass"
-        if "risk_level" not in result_json:
-            result_json["risk_level"] = "none"
+        staff_quality = result_json.setdefault("staff_quality", {})
+        if "score" not in staff_quality:
+            staff_quality["score"] = result_json.get("score", 100)
+        if "level" not in staff_quality:
+            staff_quality["level"] = result_json.get("result_level", "pass")
+        if "risk_level" not in staff_quality:
+            staff_quality["risk_level"] = result_json.get("risk_level", "none")
+        result_json["score"] = staff_quality["score"]
+        result_json["result_level"] = staff_quality["level"]
+        result_json["risk_level"] = staff_quality["risk_level"]
+        intent = result_json.setdefault("customer_intent_detail", {})
+        if "intent_score" not in intent:
+            intent["intent_score"] = 0
+        if "intent_tier" not in intent:
+            intent["intent_tier"] = self._intent_tier(intent.get("intent_score") or 0)
+        contact = intent.setdefault("contact_status", {})
+        contact.setdefault("contact_requested", False)
+        contact.setdefault("contact_provided", False)
+        contact.setdefault("xianfa_handoff_status", "none")
         issues = result_json.setdefault("issues", [])
         for issue in issues:
             ids = issue.get("evidence_message_ids") or []
             issue["evidence_message_ids"] = [msg_id for msg_id in ids if msg_id in existing_ids]
 
+    @staticmethod
+    def _intent_tier(score: int | float) -> str:
+        score = int(score or 0)
+        if score >= 85:
+            return "H1"
+        if score >= 70:
+            return "H2"
+        if score >= 50:
+            return "H3"
+        if score >= 30:
+            return "H4"
+        return "L"
+
     def _save_qc_result(self, cur: pymysql.cursors.DictCursor, task: dict[str, Any], result_json: dict[str, Any], conversation_data: dict[str, Any]) -> None:
         result_id = f"res_{task['task_id']}"
+        staff_quality = result_json.get("staff_quality") or {}
+        score = int(staff_quality.get("score", result_json.get("score") or 0))
+        result_level = staff_quality.get("level") or result_json.get("result_level") or "pass"
+        risk_level = staff_quality.get("risk_level") or result_json.get("risk_level") or "none"
+        dimension_scores = staff_quality.get("dimension_scores") or result_json.get("dimension_scores") or {}
         cur.execute("SELECT id FROM qc_result WHERE task_id=%s AND is_deleted=0", (task["id"],))
         old = cur.fetchone()
         if old:
@@ -1851,11 +2125,11 @@ class SmartQAPipeline:
                 result_id,
                 task["id"],
                 task["conversation_id"],
-                int(result_json.get("score") or 0),
-                result_json.get("result_level") or "pass",
-                result_json.get("risk_level") or "none",
+                score,
+                result_level,
+                risk_level,
                 result_json.get("summary"),
-                json.dumps(result_json.get("dimension_scores") or {}, ensure_ascii=False),
+                json.dumps(dimension_scores, ensure_ascii=False),
                 result_json.get("confidence"),
                 self.tenant_id,
                 self.created_id,

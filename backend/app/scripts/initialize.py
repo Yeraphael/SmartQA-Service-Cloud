@@ -143,7 +143,7 @@ class InitializeData:
             "质检规则",
             "客服账号",
         ]
-        staff_titles = ["SmartQA", "我的工作台", "我的会话", "我的质检结果", "我的改进建议"]
+        staff_titles = ["SmartQA", "我的工作台", "我的意向客户", "我的质检结果", "我的改进建议"]
 
         await self.__bind_role_menus(db, role_map["smartqa_boss"].id, [menu_map[t].id for t in boss_titles if t in menu_map])
         await self.__bind_role_menus(db, role_map["smartqa_staff"].id, [menu_map[t].id for t in staff_titles if t in menu_map])

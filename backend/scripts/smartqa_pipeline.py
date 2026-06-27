@@ -60,6 +60,21 @@ def main() -> None:
     ai_parser = sub.add_parser("run-ai")
     ai_parser.add_argument("--limit", type=int, default=1)
 
+    short_parser = sub.add_parser("daily-qc-short")
+    short_parser.add_argument("--limit", type=int, default=40)
+    short_parser.add_argument("--max-messages", type=int, default=20)
+    short_parser.add_argument("--execute", action="store_true", help="call Ali model immediately")
+
+    staff_parser = sub.add_parser("qc-staff-short")
+    staff_parser.add_argument("staff_ids", nargs="+", type=int)
+    staff_parser.add_argument("--per-staff", type=int, default=1)
+    staff_parser.add_argument("--max-messages", type=int, default=20)
+    staff_parser.add_argument("--execute", action="store_true", help="call Ali model immediately")
+
+    reset_parser = sub.add_parser("reset-running")
+    reset_parser.add_argument("--minutes", type=int, default=30)
+    reset_parser.add_argument("--all", action="store_true", help="reset all running tasks regardless of age")
+
     sub.add_parser("verify")
 
     args = parser.parse_args()
@@ -86,6 +101,19 @@ def main() -> None:
         print_json(pipeline.run_daily_qc_sample(limit=args.limit, execute=args.execute))
     elif args.command == "run-ai":
         print_json(pipeline.execute_qc_tasks(limit=args.limit))
+    elif args.command == "daily-qc-short":
+        print_json(pipeline.run_short_qc_sample(limit=args.limit, max_messages=args.max_messages, execute=args.execute))
+    elif args.command == "qc-staff-short":
+        print_json(
+            pipeline.run_staff_short_qc_sample(
+                staff_ids=args.staff_ids,
+                per_staff=args.per_staff,
+                max_messages=args.max_messages,
+                execute=args.execute,
+            )
+        )
+    elif args.command == "reset-running":
+        print_json({"reset": pipeline.reset_stale_running_tasks(minutes=args.minutes, all_running=args.all)})
     elif args.command == "verify":
         source = pipeline.source_exact_counts()
         target = pipeline.target_counts()

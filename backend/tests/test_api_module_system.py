@@ -69,7 +69,7 @@ class TestCurrentUser:
 
         menu_titles = _flatten_menu_titles(body.get("menus") or [])
         assert "我的工作台" in menu_titles
-        assert "我的会话" in menu_titles
+        assert "我的意向客户" in menu_titles
         assert "客服账号" not in menu_titles
 
     def test_password_update_route_exists(self, test_client: TestClient, auth_headers: dict) -> None:

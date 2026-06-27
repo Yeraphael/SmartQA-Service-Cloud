@@ -23,7 +23,7 @@ export const headerBarConfig: HeaderBarFeatureConfig = {
   },
   settings: {
     enabled: false,
-    description: "Template settings panel is removed.",
+    description: "SmartQA does not expose a settings panel.",
   },
   themeToggle: {
     enabled: true,

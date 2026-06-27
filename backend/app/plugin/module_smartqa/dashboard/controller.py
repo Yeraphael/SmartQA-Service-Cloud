@@ -65,3 +65,31 @@ async def get_improvements_controller(
 ) -> JSONResponse:
     result = await DashboardService(auth).improvements(limit=limit, staff_id=staff_id)
     return SuccessResponse(data=result, msg="查询改进建议成功")
+
+
+@DashboardRouter.get("/intent-customers", summary="意向客户池", response_model=ResponseSchema[list[dict]])
+async def get_intent_customers_controller(
+    auth: Annotated[AuthSchema, Depends(AuthPermission())],
+    limit: int = Query(50, ge=1, le=200, description="返回数量"),
+    keyword: str | None = Query(None, description="客户/商品/客服关键词"),
+    tier: str | None = Query(None, description="意向等级 H1/H2/H3/H4/L"),
+) -> JSONResponse:
+    result = await DashboardService(auth).intent_customers(limit=limit, keyword=keyword, tier=tier)
+    return SuccessResponse(data=result, msg="查询意向客户成功")
+
+
+@DashboardRouter.get("/opportunity-funnel", summary="商机漏斗", response_model=ResponseSchema[list[dict]])
+async def get_opportunity_funnel_controller(
+    auth: Annotated[AuthSchema, Depends(AuthPermission())],
+) -> JSONResponse:
+    result = await DashboardService(auth).opportunity_funnel()
+    return SuccessResponse(data=result, msg="查询商机漏斗成功")
+
+
+@DashboardRouter.get("/product-opportunities", summary="商品机会", response_model=ResponseSchema[list[dict]])
+async def get_product_opportunities_controller(
+    auth: Annotated[AuthSchema, Depends(AuthPermission())],
+    limit: int = Query(20, ge=1, le=100, description="返回数量"),
+) -> JSONResponse:
+    result = await DashboardService(auth).product_opportunities(limit=limit)
+    return SuccessResponse(data=result, msg="查询商品机会成功")

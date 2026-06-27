@@ -264,7 +264,7 @@ export class MenuProcessor {
         ? this.normalizeMenuPaths(item.children, fullPath)
         : item.children;
 
-      const redirect = item.redirect || this.resolveDefaultRedirect(children);
+      const redirect = this.resolveDefaultRedirect(children) || item.redirect;
 
       return {
         ...item,

@@ -231,11 +231,12 @@ class QcTaskExecutor:
             ]
         )
 
-        prompt = template.template_content.format(
-            conversation_id=conversation_data["conversation_id"],
-            qn_status=conversation_data.get("qn_status", ""),
-            messages=messages_text,
-            rules=rules_text,
+        prompt = (
+            template.template_content
+            .replace("{conversation_id}", conversation_data["conversation_id"])
+            .replace("{qn_status}", conversation_data.get("qn_status", "") or "")
+            .replace("{messages}", messages_text)
+            .replace("{rules}", rules_text)
         )
 
         return prompt
@@ -279,15 +280,22 @@ class QcTaskExecutor:
             old_result.is_deleted = True
             old_result.deleted_time = datetime.now()
 
+        staff_quality = result_json.get("staff_quality") or {}
+        customer_intent = result_json.get("customer_intent_detail") or {}
+        score = staff_quality.get("score", result_json.get("score", 0))
+        result_level = staff_quality.get("level", result_json.get("result_level", "pass"))
+        risk_level = staff_quality.get("risk_level", result_json.get("risk_level", "none"))
+        dimension_scores = staff_quality.get("dimension_scores", result_json.get("dimension_scores"))
+
         qc_result = QcResultModel(
             result_id=result_id,
             task_id=task.id,
             conversation_id=task.conversation_id,
-            score=result_json.get("score", 0),
-            result_level=result_json.get("result_level", "pass"),
-            risk_level=result_json.get("risk_level", "none"),
+            score=score,
+            result_level=result_level,
+            risk_level=risk_level,
             summary=result_json.get("summary"),
-            dimension_scores=result_json.get("dimension_scores"),
+            dimension_scores=dimension_scores,
             confidence=result_json.get("confidence"),
             tenant_id=self.auth.tenant_id if self.auth else None,
             created_id=self.auth.user_id if self.auth else None,

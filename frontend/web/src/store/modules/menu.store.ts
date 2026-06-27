@@ -58,7 +58,7 @@ export const useMenuStore = defineStore(
     const setMenuList = (list: AppRouteRecord[]) => {
       const merged = mergeShellRoutesIntoMenu(list);
       menuList.value = merged;
-      setHomePath(HOME_PAGE_PATH || getFirstMenuPath(merged));
+      setHomePath(getFirstMenuPath(merged) || HOME_PAGE_PATH);
     };
 
     /**

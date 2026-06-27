@@ -48,6 +48,26 @@ const SmartQAAPI = {
       params: { limit, staff_id: staffId },
     });
   },
+  intentCustomers(params?: { limit?: number; keyword?: string; tier?: string }) {
+    return request<ApiResponse<IntentCustomer[]>>({
+      url: `${API_PATH}/dashboard/intent-customers`,
+      method: "get",
+      params,
+    });
+  },
+  opportunityFunnel() {
+    return request<ApiResponse<OpportunityFunnelStage[]>>({
+      url: `${API_PATH}/dashboard/opportunity-funnel`,
+      method: "get",
+    });
+  },
+  productOpportunities(limit = 20) {
+    return request<ApiResponse<ProductOpportunity[]>>({
+      url: `${API_PATH}/dashboard/product-opportunities`,
+      method: "get",
+      params: { limit },
+    });
+  },
   batchSummary() {
     return request<ApiResponse<QianniuSummary>>({
       url: `${API_PATH}/qianniu/summary`,
@@ -248,6 +268,10 @@ export interface DashboardOverview {
   fail_count: number;
   high_risk_count: number;
   issue_count: number;
+  high_intent_count?: number;
+  h_handoff_rate?: number;
+  contact_request_rate?: number;
+  contact_success_rate?: number;
 }
 
 export interface StaffRanking {
@@ -260,6 +284,9 @@ export interface StaffRanking {
   conversation_count?: number;
   fail_count?: number;
   high_risk_count: number;
+  h_customer_count?: number;
+  contact_request_rate?: number;
+  contact_success_rate?: number;
 }
 
 export interface StaffPerformance extends StaffRanking {
@@ -313,6 +340,70 @@ export interface RecentHighRisk {
   start_time?: string;
   product_name?: string;
   customer_account?: string;
+}
+
+export interface IntentReason {
+  reason_code?: string;
+  reason_text?: string;
+  evidence_message_ids?: string[];
+}
+
+export interface IntentCustomer {
+  result_id: number;
+  conversation_pk: number;
+  conversation_id: string;
+  customer_id?: number;
+  customer_account?: string;
+  customer_alias_masked?: string;
+  staff_id?: number;
+  staff_name?: string;
+  shop_id?: number;
+  shop_name?: string;
+  product_pk?: number;
+  product_id?: string;
+  product_name?: string;
+  staff_quality_score?: number;
+  intent_score: number;
+  intent_tier: "H1" | "H2" | "H3" | "H4" | "L";
+  lifecycle_stage?: string;
+  need_type?: string;
+  need_summary?: string;
+  intent_reasons?: IntentReason[];
+  intent_reason_text?: string;
+  intent_evidence_message_ids?: string[];
+  evidence_count?: number;
+  missing_infos?: string[];
+  tags?: string[];
+  contact_requested: boolean;
+  contact_provided: boolean;
+  contact_type?: string;
+  xianfa_handoff_status: string;
+  next_action?: string;
+  suggested_reply?: string;
+  quote_given?: boolean;
+  silent_hours?: number;
+  risk_flags?: string[];
+  risk_level?: string;
+  start_time?: string;
+}
+
+export interface OpportunityFunnelStage {
+  stage: string;
+  label: string;
+  value: number;
+  rate: number;
+}
+
+export interface ProductOpportunity {
+  product_id?: string;
+  product_name: string;
+  conversation_count: number;
+  h_customer_count: number;
+  avg_intent_score: number;
+  custom_count: number;
+  bulk_count: number;
+  price_sensitive_count: number;
+  h_customer_rate: number;
 }
 
 export interface QianniuSummary {
