@@ -3,10 +3,11 @@ from datetime import datetime
 from sqlalchemy import DateTime, Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.core.base_model import ModelMixin, TenantMixin, UserMixin
+from app.core.base_model import TenantMixin
+from app.plugin.module_smartqa.models.base import SmartQABulkModelMixin
 
 
-class OdsImportBatchModel(ModelMixin, TenantMixin, UserMixin):
+class OdsImportBatchModel(SmartQABulkModelMixin, TenantMixin):
     """千牛导入/同步批次。"""
 
     __tablename__: str = "ods_import_batch"
@@ -14,7 +15,7 @@ class OdsImportBatchModel(ModelMixin, TenantMixin, UserMixin):
         UniqueConstraint("batch_id", name="uq_ods_import_batch_batch_id"),
         {"comment": "SmartQA 数据导入/同步批次"},
     )
-    __loader_options__: list[str] = ["created_by", "updated_by", "deleted_by", "tenant_by"]
+    __loader_options__: list[str] = ["tenant_by"]
 
     batch_id: Mapped[str] = mapped_column(String(64), nullable=False, comment="批次ID")
     source_system: Mapped[str] = mapped_column(String(32), default="qianniu", nullable=False, index=True, comment="来源系统")
@@ -29,7 +30,7 @@ class OdsImportBatchModel(ModelMixin, TenantMixin, UserMixin):
     finished_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, comment="结束时间")
 
 
-class OdsQnChatRecordModel(ModelMixin, TenantMixin, UserMixin):
+class OdsQnChatRecordModel(SmartQABulkModelMixin, TenantMixin):
     """千牛聊天明细原始表。"""
 
     __tablename__: str = "ods_qn_chat_record"
@@ -38,7 +39,7 @@ class OdsQnChatRecordModel(ModelMixin, TenantMixin, UserMixin):
         Index("ix_ods_qn_chat_fingerprint", "source_system", "message_fingerprint"),
         {"comment": "千牛聊天明细原始表"},
     )
-    __loader_options__: list[str] = ["created_by", "updated_by", "deleted_by", "tenant_by"]
+    __loader_options__: list[str] = ["tenant_by"]
 
     batch_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True, comment="批次ID")
     source_system: Mapped[str] = mapped_column(String(32), default="qianniu", nullable=False, index=True, comment="来源系统")
@@ -55,7 +56,7 @@ class OdsQnChatRecordModel(ModelMixin, TenantMixin, UserMixin):
     last_seen_batch_id: Mapped[str | None] = mapped_column(String(64), nullable=True, comment="最后出现批次")
 
 
-class OdsQnShopRecordModel(ModelMixin, TenantMixin, UserMixin):
+class OdsQnShopRecordModel(SmartQABulkModelMixin, TenantMixin):
     """千牛咨询业务原始表。"""
 
     __tablename__: str = "ods_qn_shop_record"
@@ -63,7 +64,7 @@ class OdsQnShopRecordModel(ModelMixin, TenantMixin, UserMixin):
         UniqueConstraint("source_system", "relation_id", "business_id", name="uq_ods_qn_shop_conversation"),
         {"comment": "千牛咨询业务原始表"},
     )
-    __loader_options__: list[str] = ["created_by", "updated_by", "deleted_by", "tenant_by"]
+    __loader_options__: list[str] = ["tenant_by"]
 
     batch_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True, comment="批次ID")
     source_system: Mapped[str] = mapped_column(String(32), default="qianniu", nullable=False, index=True, comment="来源系统")

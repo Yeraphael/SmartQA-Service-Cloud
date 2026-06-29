@@ -17,7 +17,7 @@ class SourceDbSyncService:
         pipeline = SmartQAPipeline(
             source_config=self.source_config,
             tenant_id=self.auth.tenant_id if self.auth else 1,
-            created_id=self.auth.user_id if self.auth else None,
+            created_id=self.auth.user.id if self.auth and self.auth.user else None,
         )
         return await asyncio.to_thread(self._run_full_sync, pipeline, build, seed, truncate_dwd)
 

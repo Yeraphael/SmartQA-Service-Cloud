@@ -19,6 +19,9 @@
 // 暗黑主题
 @use "./element-plus/dark";
 
+// ---------- SmartQA business screens ----------
+@use "./smartqa";
+
 // ---------- animations/ ----------
 @use "./animations/router-transition";
 @use "./animations/theme-change";

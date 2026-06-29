@@ -1,18 +1,32 @@
 <template>
-  <div class="smartqa-page">
-    <div class="smartqa-toolbar">
-      <ElSelect v-model="ruleStatus" clearable placeholder="规则状态" class="status-select" @change="loadRules">
-        <ElOption label="启用" value="active" />
-        <ElOption label="停用" value="inactive" />
-      </ElSelect>
-      <ElButton type="primary" icon="Plus" @click="openRuleForm()">新增规则</ElButton>
-      <ElButton icon="DocumentAdd" @click="openVersionDialog">发布版本</ElButton>
-      <ElButton :loading="loading" icon="Refresh" @click="loadAll">刷新</ElButton>
-    </div>
+  <div class="smartqa-screen smartqa-page">
+    <section class="page-head">
+      <div>
+        <h2>规则配置</h2>
+        <p>维护质检规则、AI Prompt 和发布版本，后续每日批量质检按启用版本执行。</p>
+      </div>
+      <div class="head-actions">
+        <ElSelect v-model="ruleStatus" clearable placeholder="规则状态" class="status-select" @change="loadRules">
+          <ElOption label="启用" value="active" />
+          <ElOption label="停用" value="inactive" />
+        </ElSelect>
+        <ElButton type="primary" icon="Plus" @click="openRuleForm()">新增规则</ElButton>
+        <ElButton icon="DocumentAdd" @click="openVersionDialog">发布版本</ElButton>
+        <ElButton :loading="loading" icon="Refresh" @click="loadAll">刷新</ElButton>
+      </div>
+    </section>
+
+    <section class="summary-grid">
+      <article v-for="item in ruleMetrics" :key="item.label" class="summary-card">
+        <span>{{ item.label }}</span>
+        <strong>{{ item.value }}</strong>
+        <em>{{ item.hint }}</em>
+      </article>
+    </section>
 
     <ElTabs v-model="activeTab">
       <ElTabPane label="规则" name="rules">
-        <ElCard shadow="never">
+        <section class="panel">
           <ElTable :loading="loading" :data="rules" row-key="id" height="610">
             <ElTableColumn prop="rule_code" label="编码" min-width="150" show-overflow-tooltip />
             <ElTableColumn prop="rule_name" label="规则" min-width="160" show-overflow-tooltip />
@@ -32,11 +46,11 @@
               </template>
             </ElTableColumn>
           </ElTable>
-        </ElCard>
+        </section>
       </ElTabPane>
 
       <ElTabPane label="Prompt" name="prompts">
-        <ElCard shadow="never">
+        <section class="panel">
           <div class="tab-actions">
             <ElButton type="primary" icon="Plus" @click="openPromptForm()">新增Prompt</ElButton>
           </div>
@@ -52,11 +66,11 @@
               </template>
             </ElTableColumn>
           </ElTable>
-        </ElCard>
+        </section>
       </ElTabPane>
 
       <ElTabPane label="版本" name="versions">
-        <ElCard shadow="never">
+        <section class="panel">
           <ElTable :loading="loading" :data="versions" row-key="id" height="610">
             <ElTableColumn prop="rule_version" label="规则版本" min-width="190" show-overflow-tooltip />
             <ElTableColumn prop="prompt_version" label="Prompt版本" min-width="190" show-overflow-tooltip />
@@ -66,7 +80,7 @@
               <template #default="{ row }">{{ row.rule_codes?.length || 0 }}</template>
             </ElTableColumn>
           </ElTable>
-        </ElCard>
+        </section>
       </ElTabPane>
     </ElTabs>
 
@@ -166,7 +180,7 @@
 
 <script setup lang="ts">
 import { ElMessage, ElMessageBox } from "element-plus";
-import { onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 import SmartQAAPI, {
   type QcPromptTemplate,
   type QcPromptTemplateForm,
@@ -213,6 +227,13 @@ const versionForm = reactive({
   prompt_version: "",
   rule_codes: [] as string[],
 });
+
+const ruleMetrics = computed(() => [
+  { label: "规则数", value: rules.value.length, hint: "当前筛选" },
+  { label: "启用规则", value: rules.value.filter((item) => item.status === "active").length, hint: "参与质检" },
+  { label: "Prompt", value: prompts.value.length, hint: "AI分析模板" },
+  { label: "发布版本", value: versions.value.length, hint: "可执行版本" },
+]);
 
 function assign<T extends object>(target: T, source: T) {
   Object.assign(target, source);
@@ -327,14 +348,6 @@ onMounted(loadAll);
 </script>
 
 <style scoped>
-.smartqa-page {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  height: 100%;
-  padding: 12px;
-}
-
 .smartqa-toolbar,
 .tab-actions {
   display: flex;

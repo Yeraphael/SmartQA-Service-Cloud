@@ -107,7 +107,7 @@ class DimensionBuilder:
             if existing_product:
                 if existing_product.product_name != product_name:
                     existing_product.product_name = product_name
-                    existing_product.updated_at = datetime.now()
+                    existing_product.updated_time = datetime.now()
                 product_id_map[(shop_name, product_id)] = existing_product.id
             else:
                 new_product = DimProductModel(

@@ -3,10 +3,11 @@ from datetime import datetime
 from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.core.base_model import ModelMixin, TenantMixin, UserMixin
+from app.core.base_model import TenantMixin
+from app.plugin.module_smartqa.models.base import SmartQABulkModelMixin
 
 
-class DimShopModel(ModelMixin, TenantMixin, UserMixin):
+class DimShopModel(SmartQABulkModelMixin, TenantMixin):
     """店铺维表。"""
 
     __tablename__: str = "dim_shop"
@@ -14,7 +15,7 @@ class DimShopModel(ModelMixin, TenantMixin, UserMixin):
         UniqueConstraint("source_system", "shop_name", name="uq_dim_shop_source_name"),
         {"comment": "店铺维表"},
     )
-    __loader_options__: list[str] = ["created_by", "updated_by", "deleted_by", "tenant_by"]
+    __loader_options__: list[str] = ["tenant_by"]
 
     shop_key: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, comment="店铺业务键")
     source_system: Mapped[str] = mapped_column(String(32), default="qianniu", nullable=False, index=True, comment="来源系统")
@@ -22,7 +23,7 @@ class DimShopModel(ModelMixin, TenantMixin, UserMixin):
     status: Mapped[str] = mapped_column(String(16), default="active", nullable=False, index=True, comment="状态")
 
 
-class DimProductModel(ModelMixin, TenantMixin, UserMixin):
+class DimProductModel(SmartQABulkModelMixin, TenantMixin):
     """商品维表。"""
 
     __tablename__: str = "dim_product"
@@ -30,7 +31,7 @@ class DimProductModel(ModelMixin, TenantMixin, UserMixin):
         UniqueConstraint("source_system", "shop_id", "product_id", name="uq_dim_product_source_shop_product"),
         {"comment": "商品维表"},
     )
-    __loader_options__: list[str] = ["created_by", "updated_by", "deleted_by", "tenant_by"]
+    __loader_options__: list[str] = ["tenant_by"]
 
     product_key: Mapped[str] = mapped_column(String(128), nullable=False, unique=True, comment="商品业务键")
     source_system: Mapped[str] = mapped_column(String(32), default="qianniu", nullable=False, index=True, comment="来源系统")
@@ -40,7 +41,7 @@ class DimProductModel(ModelMixin, TenantMixin, UserMixin):
     status: Mapped[str] = mapped_column(String(16), default="active", nullable=False, index=True, comment="状态")
 
 
-class DimStaffModel(ModelMixin, TenantMixin, UserMixin):
+class DimStaffModel(SmartQABulkModelMixin, TenantMixin):
     """客服维表。"""
 
     __tablename__: str = "dim_staff"
@@ -48,7 +49,7 @@ class DimStaffModel(ModelMixin, TenantMixin, UserMixin):
         UniqueConstraint("source_system", "primary_account", name="uq_dim_staff_source_account"),
         {"comment": "客服维表"},
     )
-    __loader_options__: list[str] = ["created_by", "updated_by", "deleted_by", "tenant_by"]
+    __loader_options__: list[str] = ["tenant_by"]
 
     staff_key: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, comment="客服业务键")
     staff_name: Mapped[str] = mapped_column(String(64), nullable=False, index=True, comment="客服名称")
@@ -58,7 +59,7 @@ class DimStaffModel(ModelMixin, TenantMixin, UserMixin):
     status: Mapped[str] = mapped_column(String(16), default="active", nullable=False, index=True, comment="状态")
 
 
-class DimStaffAccountModel(ModelMixin, TenantMixin, UserMixin):
+class DimStaffAccountModel(SmartQABulkModelMixin, TenantMixin):
     """客服渠道账号维表。"""
 
     __tablename__: str = "dim_staff_account"
@@ -66,7 +67,7 @@ class DimStaffAccountModel(ModelMixin, TenantMixin, UserMixin):
         UniqueConstraint("source_system", "shop_id", "account_name", name="uq_dim_staff_account_source_shop_account"),
         {"comment": "客服渠道账号维表"},
     )
-    __loader_options__: list[str] = ["created_by", "updated_by", "deleted_by", "tenant_by"]
+    __loader_options__: list[str] = ["tenant_by"]
 
     staff_account_key: Mapped[str] = mapped_column(String(128), nullable=False, unique=True, comment="客服账号业务键")
     staff_id: Mapped[int] = mapped_column(Integer, ForeignKey("dim_staff.id", ondelete="RESTRICT", onupdate="CASCADE"), nullable=False, index=True, comment="客服ID")
@@ -77,7 +78,7 @@ class DimStaffAccountModel(ModelMixin, TenantMixin, UserMixin):
     status: Mapped[str] = mapped_column(String(16), default="active", nullable=False, index=True, comment="状态")
 
 
-class DimCustomerModel(ModelMixin, TenantMixin, UserMixin):
+class DimCustomerModel(SmartQABulkModelMixin, TenantMixin):
     """客户维表。"""
 
     __tablename__: str = "dim_customer"
@@ -85,7 +86,7 @@ class DimCustomerModel(ModelMixin, TenantMixin, UserMixin):
         UniqueConstraint("first_source", "primary_taobao_account", name="uq_dim_customer_source_taobao"),
         {"comment": "客户维表"},
     )
-    __loader_options__: list[str] = ["created_by", "updated_by", "deleted_by", "tenant_by"]
+    __loader_options__: list[str] = ["tenant_by"]
 
     customer_key: Mapped[str] = mapped_column(String(128), nullable=False, unique=True, comment="客户业务键")
     primary_taobao_account: Mapped[str] = mapped_column(String(255), nullable=False, index=True, comment="真实淘宝/旺旺账号")
@@ -96,7 +97,7 @@ class DimCustomerModel(ModelMixin, TenantMixin, UserMixin):
     status: Mapped[str] = mapped_column(String(16), default="active", nullable=False, index=True, comment="状态")
 
 
-class DimCustomerIdentityModel(ModelMixin, TenantMixin, UserMixin):
+class DimCustomerIdentityModel(SmartQABulkModelMixin, TenantMixin):
     """客户身份维表。"""
 
     __tablename__: str = "dim_customer_identity"
@@ -104,7 +105,7 @@ class DimCustomerIdentityModel(ModelMixin, TenantMixin, UserMixin):
         UniqueConstraint("identity_type", "identity_value", name="uq_dim_customer_identity_type_value"),
         {"comment": "客户身份维表"},
     )
-    __loader_options__: list[str] = ["created_by", "updated_by", "deleted_by", "tenant_by"]
+    __loader_options__: list[str] = ["tenant_by"]
 
     customer_id: Mapped[int] = mapped_column(Integer, ForeignKey("dim_customer.id", ondelete="RESTRICT", onupdate="CASCADE"), nullable=False, index=True, comment="客户ID")
     identity_type: Mapped[str] = mapped_column(String(32), nullable=False, index=True, comment="身份类型")

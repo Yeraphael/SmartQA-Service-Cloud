@@ -15,6 +15,12 @@ const SmartQAAPI = {
       method: "get",
     });
   },
+  bossWorkbench() {
+    return request<ApiResponse<BossWorkbench>>({
+      url: `${API_PATH}/dashboard/boss-workbench`,
+      method: "get",
+    });
+  },
   staffRanking(limit = 20) {
     return request<ApiResponse<StaffRanking[]>>({
       url: `${API_PATH}/dashboard/staff-ranking`,
@@ -53,12 +59,6 @@ const SmartQAAPI = {
       url: `${API_PATH}/dashboard/intent-customers`,
       method: "get",
       params,
-    });
-  },
-  opportunityFunnel() {
-    return request<ApiResponse<OpportunityFunnelStage[]>>({
-      url: `${API_PATH}/dashboard/opportunity-funnel`,
-      method: "get",
     });
   },
   productOpportunities(limit = 20) {
@@ -274,6 +274,84 @@ export interface DashboardOverview {
   contact_success_rate?: number;
 }
 
+export interface BossWorkbench {
+  status: BossWorkbenchStatus;
+  metrics: BossWorkbenchMetrics;
+  dimensions: BossDimension[];
+  staff_quality: BossStaffQuality[];
+  quadrant: BossQuadrant;
+  product_opportunities: ProductOpportunity[];
+  trend_7d: BossTrendPoint[];
+}
+
+export interface BossWorkbenchStatus {
+  data_date?: string;
+  rpa_fetch_time?: string;
+  ai_finished_time?: string;
+  analyzed_conversation_count: number;
+  covered_staff_count: number;
+  system_status: string;
+}
+
+export interface BossWorkbenchMetrics {
+  service_quality_score: number;
+  high_risk_conversation_count: number;
+  need_attention_staff_count: number;
+  high_intent_pending_count: number;
+  avg_response_seconds: number;
+  conversation_count: number;
+}
+
+export interface BossDimension {
+  key:
+    | "overall"
+    | "response_efficiency"
+    | "service_attitude"
+    | "professional_ability"
+    | "problem_solving"
+    | "demand_mining"
+    | "conversion_progress";
+  label: string;
+}
+
+export interface BossStaffQuality {
+  staff_id: number;
+  staff_name: string;
+  primary_account: string;
+  role_label: string;
+  qc_count: number;
+  conversation_count: number;
+  overall_score: number;
+  dimensions: Record<string, number>;
+  high_risk_count: number;
+  pending_intent_count: number;
+  main_issue: string;
+  trend: Array<{ date: string; score: number }>;
+}
+
+export interface BossQuadrant {
+  x_axis: string;
+  y_axis: string;
+  points: BossQuadrantPoint[];
+}
+
+export interface BossQuadrantPoint {
+  staff_id: number;
+  staff_name: string;
+  x: number;
+  y: number;
+  score: number;
+  status: string;
+}
+
+export interface BossTrendPoint {
+  date: string;
+  quality_score: number;
+  high_risk_count: number;
+  pending_intent_count: number;
+  conversation_count: number;
+}
+
 export interface StaffRanking {
   staff_id: number;
   staff_name: string;
@@ -385,13 +463,6 @@ export interface IntentCustomer {
   risk_flags?: string[];
   risk_level?: string;
   start_time?: string;
-}
-
-export interface OpportunityFunnelStage {
-  stage: string;
-  label: string;
-  value: number;
-  rate: number;
 }
 
 export interface ProductOpportunity {

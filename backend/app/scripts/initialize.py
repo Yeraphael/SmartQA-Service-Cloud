@@ -130,23 +130,31 @@ class InitializeData:
             return
 
         menu_rows = await db.execute(select(MenuModel).where(MenuModel.status == 0))
-        menu_map = {menu.title or menu.name: menu for menu in menu_rows.scalars().all()}
+        menu_map = {menu.route_name or menu.name: menu for menu in menu_rows.scalars().all()}
 
-        boss_titles = [
+        boss_routes = [
             "SmartQA",
-            "工作台总览",
-            "千牛数据源",
-            "会话管理",
-            "AI质检任务",
-            "质检结果",
-            "客服表现",
-            "质检规则",
-            "客服账号",
+            "SmartQADashboard",
+            "SmartQAStaffPerformance",
+            "SmartQACustomerOpportunities",
+            "SmartQAProductOpportunities",
+            "SmartQAConversations",
+            "SmartQAStaffUsers",
+            "SmartQADataConfig",
+            "SmartQAQcTasks",
+            "SmartQAQianniuData",
+            "SmartQAQcRules",
         ]
-        staff_titles = ["SmartQA", "我的工作台", "我的意向客户", "我的质检结果", "我的改进建议"]
+        staff_routes = [
+            "SmartQA",
+            "SmartQAMyDashboard",
+            "SmartQAMyConversations",
+            "SmartQAMyQcResults",
+            "SmartQAMyAccount",
+        ]
 
-        await self.__bind_role_menus(db, role_map["smartqa_boss"].id, [menu_map[t].id for t in boss_titles if t in menu_map])
-        await self.__bind_role_menus(db, role_map["smartqa_staff"].id, [menu_map[t].id for t in staff_titles if t in menu_map])
+        await self.__bind_role_menus(db, role_map["smartqa_boss"].id, [menu_map[t].id for t in boss_routes if t in menu_map])
+        await self.__bind_role_menus(db, role_map["smartqa_staff"].id, [menu_map[t].id for t in staff_routes if t in menu_map])
 
     @staticmethod
     async def __bind_role_menus(db: AsyncSession, role_id: int, menu_ids: list[int]) -> None:

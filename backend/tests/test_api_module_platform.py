@@ -19,9 +19,14 @@ class TestMenu:
         titles = _flatten_titles(response.json()["data"].get("menus") or [])
         assert "SmartQA" in titles
         assert "工作台总览" in titles
-        assert "客服账号" in titles
+        assert "客服管理" in titles
+        assert "客户商机" in titles
+        assert "商品机会" in titles
+        assert "数据与配置" in titles
+        assert _child_titles(response.json()["data"].get("menus") or [], "数据与配置") == {"AI分析任务", "每日数据批次", "规则配置"}
         assert "插件管理" not in titles
         assert "订单管理" not in titles
+        assert "我的改进建议" not in titles
 
 
 def _flatten_titles(items: list[dict]) -> set[str]:
@@ -34,3 +39,18 @@ def _flatten_titles(items: list[dict]) -> set[str]:
             titles.add(title)
         stack.extend(item.get("children") or [])
     return titles
+
+
+def _child_titles(items: list[dict], title: str) -> set[str]:
+    for item in items:
+        current_title = item.get("title") or item.get("name")
+        if current_title == title:
+            return {
+                child_title
+                for child in item.get("children") or []
+                if (child_title := child.get("title") or child.get("name"))
+            }
+        nested = _child_titles(item.get("children") or [], title)
+        if nested:
+            return nested
+    return set()

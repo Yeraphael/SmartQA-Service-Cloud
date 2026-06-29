@@ -123,7 +123,7 @@ import { LoginPanelAlign } from "@/components/views/fa-login/composables/useLogi
 
 defineOptions({ name: "AuthTopBar" });
 
-const DEFAULT_APP_VERSION = "3.0.0";
+const DEFAULT_APP_VERSION = "1.1.0";
 
 interface Props {
   /** 登录区表单水平对齐；未传入时不展示布局切换 */

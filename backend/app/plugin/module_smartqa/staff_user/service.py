@@ -149,7 +149,6 @@ class StaffUserService:
         await self._ensure_staff_role(session, user.id)
         staff.sys_user_id = user.id
         staff.updated_time = datetime.now()
-        staff.updated_id = self.auth.user.id if self.auth.user else None
         await session.commit()
         return {"staff_id": staff.id, "sys_user_id": user.id, "username": user.username, "created": created}
 
@@ -207,7 +206,6 @@ class StaffUserService:
 
         staff.sys_user_id = user_id
         staff.updated_time = datetime.now()
-        staff.updated_id = self.auth.user.id if self.auth.user else None
         await self._ensure_staff_role(session, user_id)
 
         await session.commit()
@@ -226,7 +224,6 @@ class StaffUserService:
 
         staff.sys_user_id = None
         staff.updated_time = datetime.now()
-        staff.updated_id = self.auth.user.id if self.auth.user else None
 
         await session.commit()
         return staff

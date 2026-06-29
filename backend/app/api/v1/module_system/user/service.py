@@ -1,10 +1,12 @@
 from app.api.v1.module_platform.menu.crud import MenuCRUD
+from app.api.v1.module_platform.menu.model import MenuModel
 from app.api.v1.module_platform.menu.schema import MenuOutSchema
 from app.api.v1.module_system.role.crud import RoleCRUD
 from app.core.base_schema import AuthSchema, BatchSetAvailable
 from app.core.exceptions import CustomException
 from app.utils.common_util import traversal_to_tree
 from app.utils.hash_bcrpy_util import PwdUtil
+from sqlalchemy import select
 
 from .crud import UserCRUD
 from .schema import (
@@ -136,20 +138,37 @@ class UserService:
             menus = [MenuOutSchema.model_validate(menu) for menu in menu_all]
         else:
             menu_ids = {menu.id for role in self.auth.user.roles or [] for menu in role.menus if menu.status == 0 and getattr(menu, "client", "pc") == "pc"}
-
-            menus = (
-                [
-                    MenuOutSchema.model_validate(menu)
-                    for menu in await MenuCRUD(self.auth).tree_list(
-                        search={"id": ("in", list(menu_ids)), **_pc_only},
-                        order_by=[{"order": "asc"}],
-                    )
-                ]
-                if menu_ids
-                else []
-            )
+            menus = await self.__role_menus_with_ancestors(menu_ids)
         user_dict.menus = traversal_to_tree([menu.model_dump() for menu in menus])
         return user_dict
+
+    async def __role_menus_with_ancestors(self, menu_ids: set[int]) -> list[MenuOutSchema]:
+        if not menu_ids or self.auth.db is None:
+            return []
+
+        rows = (
+            (
+                await self.auth.db.execute(
+                    select(MenuModel)
+                    .where(
+                        MenuModel.status == 0,
+                        MenuModel.client == "pc",
+                    )
+                    .order_by(MenuModel.order.asc(), MenuModel.id.asc())
+                )
+            )
+            .scalars()
+            .all()
+        )
+        menu_map = {menu.id: menu for menu in rows if menu.id is not None}
+        visible_ids: set[int] = set()
+        for menu_id in menu_ids:
+            current = menu_map.get(menu_id)
+            while current and current.id not in visible_ids:
+                visible_ids.add(current.id)
+                current = menu_map.get(current.parent_id) if current.parent_id else None
+
+        return [MenuOutSchema.model_validate(menu) for menu in rows if menu.id in visible_ids]
 
     async def update_current_info(self, data: CurrentUserUpdateSchema) -> UserOutSchema:
         if not self.auth.user or not self.auth.user.id:

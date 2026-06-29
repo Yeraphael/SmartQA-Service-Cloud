@@ -1,29 +1,27 @@
 <template>
-  <div class="smartqa-page">
-    <div class="smartqa-toolbar">
+  <div class="smartqa-screen smartqa-page">
+    <section class="page-head">
       <div>
-        <h2>千牛数据</h2>
-        <span>{{ scheduleText }}</span>
+        <h2>每日数据批次</h2>
+        <p>{{ scheduleText }}；老板端可在这里立即同步源库。</p>
       </div>
-      <div class="toolbar-actions">
+      <div class="head-actions">
         <ElCheckbox v-model="truncateDwd">重建明细</ElCheckbox>
         <ElButton :loading="syncing" type="primary" icon="RefreshRight" @click="syncSource">
           立即同步
         </ElButton>
         <ElButton :loading="loading" icon="Refresh" @click="loadData">刷新</ElButton>
       </div>
-    </div>
+    </section>
 
-    <ElRow :gutter="12">
-      <ElCol v-for="item in metrics" :key="item.label" :xs="12" :sm="8" :lg="4">
-        <ElCard shadow="never" class="metric-card">
-          <div class="metric-label">{{ item.label }}</div>
-          <div class="metric-value">{{ item.value }}</div>
-        </ElCard>
-      </ElCol>
-    </ElRow>
+    <section class="metric-grid">
+      <article v-for="item in metrics" :key="item.label" class="metric-card">
+        <span class="metric-label">{{ item.label }}</span>
+        <strong class="metric-value">{{ item.value }}</strong>
+      </article>
+    </section>
 
-    <ElCard shadow="never" class="schedule-card">
+    <section class="panel schedule-card">
       <ElDescriptions :column="3" border>
         <ElDescriptionsItem label="自动同步">{{ schedule?.source_sync_times || "-" }}</ElDescriptionsItem>
         <ElDescriptionsItem label="每日质检">{{ schedule?.daily_qc_time || "-" }}</ElDescriptionsItem>
@@ -33,9 +31,9 @@
           </ElTag>
         </ElDescriptionsItem>
       </ElDescriptions>
-    </ElCard>
+    </section>
 
-    <ElCard shadow="never">
+    <section class="panel">
       <ElTable :loading="loading" :data="batches" row-key="id" height="520">
         <ElTableColumn prop="batch_id" label="批次" min-width="240" show-overflow-tooltip />
         <ElTableColumn prop="source_type" label="来源" width="90" />
@@ -61,7 +59,7 @@
           @change="loadBatches"
         />
       </div>
-    </ElCard>
+    </section>
   </div>
 </template>
 
@@ -130,14 +128,6 @@ onMounted(loadData);
 </script>
 
 <style scoped>
-.smartqa-page {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  height: 100%;
-  padding: 12px;
-}
-
 .smartqa-toolbar {
   display: flex;
   align-items: center;

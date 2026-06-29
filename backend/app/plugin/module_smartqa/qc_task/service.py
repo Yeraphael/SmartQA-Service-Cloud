@@ -56,7 +56,7 @@ class QcTaskService:
         """Create and optionally execute the daily QC sample."""
         pipeline = SmartQAPipeline(
             tenant_id=self.auth.tenant_id,
-            created_id=self.auth.user_id,
+            created_id=self.auth.user.id if self.auth.user else None,
         )
         return await asyncio.to_thread(
             pipeline.run_daily_qc_sample,

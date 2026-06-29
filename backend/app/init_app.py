@@ -42,18 +42,21 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[Any, Any]:
             redis = MemoryRedis()
             app.state.redis = redis
         redis_ready = settings.REDIS_ENABLE and redis is not None
+        cache_ready = redis is not None
         limiter_ready = False
 
-        if redis_ready:
+        if cache_ready:
             await ParamsService.init_cache(redis=redis)
-            logger.info("✅ Redis系统参数初始化完成")
+            logger.info("✅ 系统参数缓存初始化完成")
             await TenantService.init_cache(redis=redis)
-            logger.info("✅ Redis租户配置初始化完成")
+            logger.info("✅ 租户配置缓存初始化完成")
             if scheduler_util:
                 await scheduler_util.init_scheduler(redis=redis)
                 logger.info("✅ 定时任务调度器初始化完成")
             await cache_util.init(redis=redis)
             logger.info("✅ SmartQA 缓存初始化完成")
+
+        if redis_ready:
             await FastAPILimiter.init(
                 redis=redis,
                 prefix=settings.REQUEST_LIMITER_REDIS_PREFIX,
@@ -63,8 +66,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[Any, Any]:
             limiter_ready = True
             logger.info("✅ 请求限流器初始化完成")
         else:
-            await cache_util.init(redis=None, enable=False)
-            logger.warning("Redis未启用，跳过参数/租户缓存、调度器和限流器初始化")
+            if not cache_ready:
+                await cache_util.init(redis=None, enable=False)
+            logger.warning("Redis未启用，请求限流器关闭；SmartQA 缓存和调度器使用本地内存实现")
 
         console_start(
             host=settings.SERVER_HOST, port=settings.SERVER_PORT,

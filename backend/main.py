@@ -8,8 +8,6 @@ from fastapi import FastAPI
 
 from alembic import command
 from app.common.enums import EnvironmentEnum
-from app.config.setting import settings
-from app.core.logger import logger
 from app.utils.banner import worship
 
 smartqa_cli = typer.Typer()
@@ -23,7 +21,11 @@ def create_app() -> FastAPI:
     返回:
     - FastAPI: 已配置生命周期的应用对象。
     """
+    os.environ.setdefault("ENVIRONMENT", EnvironmentEnum.DEV.value)
+    from app.config.setting import get_settings
     from app.init_app import lifespan, register_exceptions, register_files, register_middlewares, register_routers, reset_api_docs
+
+    settings = get_settings()
     # 创建FastAPI应用
     app = FastAPI(**settings.FASTAPI_CONFIG, lifespan=lifespan)
     # 注册异常处理器
@@ -59,8 +61,13 @@ def run(
     - None
     """
 
-    # 设置环境变量（必须在 import settings 之前，确保加载正确环境）
+    # 设置环境变量后再导入 settings/logger，确保加载正确的 .env.dev/.env.prod。
     os.environ["ENVIRONMENT"] = env.value
+    from app.config.setting import get_settings
+    from app.core.logger import logger
+
+    get_settings.cache_clear()
+    settings = get_settings()
 
     typer.secho(
         message="SmartQA 服务启动",

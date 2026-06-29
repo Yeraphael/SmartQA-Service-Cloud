@@ -5,12 +5,12 @@ import path from "node:path";
 export default defineConfig({
   plugins: [vue()],
   define: {
-    __APP_VERSION__: JSON.stringify("1.0.0"),
+    __APP_VERSION__: JSON.stringify("1.1.0"),
     __APP_NAME__: JSON.stringify("SmartQA Service Cloud"),
     __APP_INFO__: JSON.stringify({
       pkg: {
         name: "smartqa-service-cloud-web",
-        version: "1.0.0",
+        version: "1.1.0",
       },
       buildTimestamp: 0,
     }),

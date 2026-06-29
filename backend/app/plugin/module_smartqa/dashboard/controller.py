@@ -22,6 +22,14 @@ async def get_dashboard_overview_controller(
     return SuccessResponse(data=result, msg="查询看板总览成功")
 
 
+@DashboardRouter.get("/boss-workbench", summary="老板工作台总览", response_model=ResponseSchema[dict])
+async def get_boss_workbench_controller(
+    auth: Annotated[AuthSchema, Depends(AuthPermission())],
+) -> JSONResponse:
+    result = await DashboardService(auth).boss_workbench()
+    return SuccessResponse(data=result, msg="查询老板工作台成功")
+
+
 @DashboardRouter.get("/staff-ranking", summary="客服表现排行", response_model=ResponseSchema[list[dict]])
 async def get_staff_ranking_controller(
     auth: Annotated[AuthSchema, Depends(AuthPermission())],
@@ -67,7 +75,7 @@ async def get_improvements_controller(
     return SuccessResponse(data=result, msg="查询改进建议成功")
 
 
-@DashboardRouter.get("/intent-customers", summary="意向客户池", response_model=ResponseSchema[list[dict]])
+@DashboardRouter.get("/intent-customers", summary="客户商机", response_model=ResponseSchema[list[dict]])
 async def get_intent_customers_controller(
     auth: Annotated[AuthSchema, Depends(AuthPermission())],
     limit: int = Query(50, ge=1, le=200, description="返回数量"),
@@ -76,14 +84,6 @@ async def get_intent_customers_controller(
 ) -> JSONResponse:
     result = await DashboardService(auth).intent_customers(limit=limit, keyword=keyword, tier=tier)
     return SuccessResponse(data=result, msg="查询意向客户成功")
-
-
-@DashboardRouter.get("/opportunity-funnel", summary="商机漏斗", response_model=ResponseSchema[list[dict]])
-async def get_opportunity_funnel_controller(
-    auth: Annotated[AuthSchema, Depends(AuthPermission())],
-) -> JSONResponse:
-    result = await DashboardService(auth).opportunity_funnel()
-    return SuccessResponse(data=result, msg="查询商机漏斗成功")
 
 
 @DashboardRouter.get("/product-opportunities", summary="商品机会", response_model=ResponseSchema[list[dict]])

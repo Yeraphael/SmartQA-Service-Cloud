@@ -24,6 +24,10 @@ class QcRuleService:
     def __init__(self, auth: AuthSchema) -> None:
         self.auth = auth
 
+    @property
+    def current_user_id(self) -> int | None:
+        return self.auth.user.id if self.auth.user else None
+
     async def create_rule(self, session: AsyncSession, data: QcRuleCreateSchema) -> QcRuleModel:
         """创建质检规则。"""
         existing_stmt = select(QcRuleModel).where(
@@ -43,7 +47,7 @@ class QcRuleService:
             severity=data.severity,
             status=data.status,
             tenant_id=self.auth.tenant_id,
-            created_id=self.auth.user_id,
+            created_id=self.current_user_id,
         )
         session.add(rule)
         await session.flush()
@@ -65,7 +69,7 @@ class QcRuleService:
         for key, value in update_data.items():
             setattr(rule, key, value)
 
-        rule.updated_id = self.auth.user_id
+        rule.updated_id = self.current_user_id
         rule.updated_time = datetime.now()
         await session.flush()
         await session.refresh(rule)
@@ -107,7 +111,7 @@ class QcRuleService:
             raise CustomException("规则不存在")
 
         rule.is_deleted = True
-        rule.deleted_id = self.auth.user_id
+        rule.deleted_id = self.current_user_id
         rule.deleted_time = datetime.now()
         await session.flush()
 
@@ -128,7 +132,7 @@ class QcRuleService:
             output_schema_version=data.output_schema_version,
             status=data.status,
             tenant_id=self.auth.tenant_id,
-            created_id=self.auth.user_id,
+            created_id=self.current_user_id,
         )
         session.add(template)
         await session.flush()
@@ -150,7 +154,7 @@ class QcRuleService:
         for key, value in update_data.items():
             setattr(template, key, value)
 
-        template.updated_id = self.auth.user_id
+        template.updated_id = self.current_user_id
         template.updated_time = datetime.now()
         await session.flush()
         await session.refresh(template)
@@ -213,7 +217,7 @@ class QcRuleService:
             status="active",
             published_at=datetime.now(),
             tenant_id=self.auth.tenant_id,
-            created_id=self.auth.user_id,
+            created_id=self.current_user_id,
         )
         session.add(version)
         await session.flush()

@@ -3,10 +3,11 @@ from datetime import datetime
 from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.core.base_model import ModelMixin, TenantMixin, UserMixin
+from app.core.base_model import TenantMixin
+from app.plugin.module_smartqa.models.base import SmartQABulkModelMixin
 
 
-class DwdQnConversationModel(ModelMixin, TenantMixin, UserMixin):
+class DwdQnConversationModel(SmartQABulkModelMixin, TenantMixin):
     """千牛会话主表。"""
 
     __tablename__: str = "dwd_qn_conversation"
@@ -14,7 +15,7 @@ class DwdQnConversationModel(ModelMixin, TenantMixin, UserMixin):
         UniqueConstraint("source_system", "relation_id", "business_id", name="uq_dwd_qn_conversation_source_business"),
         {"comment": "千牛会话主表"},
     )
-    __loader_options__: list[str] = ["created_by", "updated_by", "deleted_by", "tenant_by"]
+    __loader_options__: list[str] = ["tenant_by"]
 
     conversation_key: Mapped[str] = mapped_column(String(512), nullable=False, unique=True, comment="会话业务键")
     conversation_id: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, comment="会话ID")
@@ -37,7 +38,7 @@ class DwdQnConversationModel(ModelMixin, TenantMixin, UserMixin):
     data_hash: Mapped[str] = mapped_column(String(64), nullable=False, comment="会话数据版本哈希")
 
 
-class DwdQnMessageModel(ModelMixin, TenantMixin, UserMixin):
+class DwdQnMessageModel(SmartQABulkModelMixin, TenantMixin):
     """千牛消息明细表。"""
 
     __tablename__: str = "dwd_qn_message"
@@ -46,7 +47,7 @@ class DwdQnMessageModel(ModelMixin, TenantMixin, UserMixin):
         Index("ix_dwd_qn_message_fingerprint", "source_system", "message_fingerprint"),
         {"comment": "千牛消息明细表"},
     )
-    __loader_options__: list[str] = ["created_by", "updated_by", "deleted_by", "tenant_by"]
+    __loader_options__: list[str] = ["tenant_by"]
 
     message_id: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, comment="消息ID")
     conversation_id: Mapped[int] = mapped_column(Integer, ForeignKey("dwd_qn_conversation.id", ondelete="CASCADE", onupdate="CASCADE"), nullable=False, index=True, comment="会话主键ID")
@@ -60,7 +61,7 @@ class DwdQnMessageModel(ModelMixin, TenantMixin, UserMixin):
     message_hash: Mapped[str] = mapped_column(String(64), nullable=False, comment="消息内容哈希")
 
 
-class DwdCustomerStaffRelationModel(ModelMixin, TenantMixin, UserMixin):
+class DwdCustomerStaffRelationModel(SmartQABulkModelMixin, TenantMixin):
     """客户客服服务关系表。"""
 
     __tablename__: str = "dwd_customer_staff_relation"
@@ -68,7 +69,7 @@ class DwdCustomerStaffRelationModel(ModelMixin, TenantMixin, UserMixin):
         UniqueConstraint("customer_id", "staff_id", "shop_id", name="uq_dwd_customer_staff_shop"),
         {"comment": "客户客服服务关系表"},
     )
-    __loader_options__: list[str] = ["created_by", "updated_by", "deleted_by", "tenant_by"]
+    __loader_options__: list[str] = ["tenant_by"]
 
     relation_key: Mapped[str] = mapped_column(String(128), nullable=False, unique=True, comment="关系业务键")
     customer_id: Mapped[int] = mapped_column(Integer, ForeignKey("dim_customer.id", ondelete="RESTRICT", onupdate="CASCADE"), nullable=False, index=True, comment="客户ID")

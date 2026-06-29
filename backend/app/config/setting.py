@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     # ================================================= #
     DEBUG: bool = True  # 调试模式
     TITLE: str = "SmartQA Service Cloud"  # 文档标题
-    VERSION: str = "1.0.0"  # 版本号
+    VERSION: str = "1.1.0"  # 版本号
     DESCRIPTION: str = "SmartQA AI 客服质检系统接口文档"  # 文档描述
     SUMMARY: str = "接口汇总"  # 文档概述
     DOCS_URL: str = "/docs"  # Swagger UI路径

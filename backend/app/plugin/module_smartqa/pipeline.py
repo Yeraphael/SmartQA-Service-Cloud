@@ -61,6 +61,20 @@ SMARTQA_ALLOWED_TABLES = {
     "qc_issue_evidence",
     "model_call_log",
 }
+SMARTQA_BULK_TABLES = [
+    "ods_import_batch",
+    "ods_qn_chat_record",
+    "ods_qn_shop_record",
+    "dim_shop",
+    "dim_product",
+    "dim_staff",
+    "dim_staff_account",
+    "dim_customer",
+    "dim_customer_identity",
+    "dwd_qn_conversation",
+    "dwd_qn_message",
+    "dwd_customer_staff_relation",
+]
 SMARTQA_REQUIRED_PARAMS: dict[str, dict[str, Any]] = {
     "tenant_name": {
         "config_name": "系统名称",
@@ -286,7 +300,7 @@ class SmartQAPipeline:
         }
 
     def apply_schema_fixes(self) -> list[str]:
-        """Drop unsafe fingerprint unique keys and add ordinary indexes."""
+        """Drop unsafe indexes and unused bulk-table UUID columns."""
         actions: list[str] = []
         with mysql_conn(self.target_config) as conn:
             with conn.cursor() as cur:
@@ -303,6 +317,39 @@ class SmartQAPipeline:
                     if not cur.fetchall():
                         cur.execute(f"CREATE INDEX `{index_name}` ON `{table}` (`source_system`, `message_fingerprint`)")
                         actions.append(f"create {table}.{index_name}")
+
+                for table in SMARTQA_BULK_TABLES:
+                    for column in ("uuid", "created_id", "updated_id", "deleted_id"):
+                        cur.execute("SHOW COLUMNS FROM `{}` LIKE %s".format(table), (column,))
+                        if not cur.fetchone():
+                            continue
+
+                        cur.execute(
+                            """
+                            SELECT constraint_name
+                            FROM information_schema.key_column_usage
+                            WHERE table_schema = DATABASE()
+                              AND table_name = %s
+                              AND column_name = %s
+                              AND referenced_table_name IS NOT NULL
+                            """,
+                            (table, column),
+                        )
+                        for constraint in cur.fetchall():
+                            name = constraint.get("constraint_name")
+                            if name:
+                                cur.execute(f"ALTER TABLE `{table}` DROP FOREIGN KEY `{name}`")
+                                actions.append(f"drop {table}.{name}")
+
+                        cur.execute("SHOW INDEX FROM `{}` WHERE Column_name=%s".format(table), (column,))
+                        for index in cur.fetchall():
+                            key_name = index.get("Key_name")
+                            if key_name and key_name != "PRIMARY":
+                                cur.execute(f"ALTER TABLE `{table}` DROP INDEX `{key_name}`")
+                                actions.append(f"drop {table}.{key_name}")
+
+                        cur.execute(f"ALTER TABLE `{table}` DROP COLUMN `{column}`")
+                        actions.append(f"drop {table}.{column}")
             conn.commit()
         return actions
 
@@ -368,6 +415,7 @@ class SmartQAPipeline:
         }
 
     def rebuild_warehouse(self, batch_id: str | None = None, truncate_dwd: bool = False) -> dict[str, Any]:
+        self.apply_schema_fixes()
         started = perf_counter()
         with mysql_conn(self.target_config) as conn:
             try:
@@ -400,6 +448,7 @@ class SmartQAPipeline:
                 with conn.cursor() as cur:
                     dropped_tables = self._drop_retired_template_tables(cur)
                     cleaned_params = self._cleanup_retired_params(cur)
+                    tenant_result = self._ensure_tenant(cur)
                     boss_user_id = self._ensure_boss(cur)
                     role_ids = self._ensure_roles(cur)
                     self._bind_user_role(cur, boss_user_id, role_ids["boss"])
@@ -414,6 +463,7 @@ class SmartQAPipeline:
                 conn.rollback()
                 raise
         return {
+            "tenant": tenant_result,
             "boss_user_id": boss_user_id,
             "roles": role_ids,
             "menus": menu_result["changed"],
@@ -1020,11 +1070,11 @@ class SmartQAPipeline:
             """
             INSERT INTO ods_import_batch (
                 batch_id, source_system, source_type, status, chat_rows, shop_rows, conversation_count,
-                started_at, created_time, updated_time, uuid, is_deleted, tenant_id, created_id
-            ) VALUES (%s,%s,'db','running',0,0,0,%s,%s,%s,%s,0,%s,%s)
+                started_at, created_time, updated_time, is_deleted, tenant_id
+            ) VALUES (%s,%s,'db','running',0,0,0,%s,%s,%s,0,%s)
             ON DUPLICATE KEY UPDATE status='running', started_at=VALUES(started_at), updated_time=VALUES(updated_time)
             """,
-            (batch_id, SOURCE_SYSTEM, now, now, now, str(uuid4()), self.tenant_id, self.created_id),
+            (batch_id, SOURCE_SYSTEM, now, now, now, self.tenant_id),
         )
 
     def _upsert_chat_rows(self, cur: pymysql.cursors.DictCursor, batch_id: str, rows: list[dict[str, Any]]) -> int:
@@ -1042,8 +1092,8 @@ class SmartQAPipeline:
             INSERT INTO ods_qn_chat_record (
                 batch_id, source_system, source_id, relation_id, business_id, chat_target, chat_content,
                 chat_time, source_create_time, message_fingerprint, row_hash, first_seen_batch_id,
-                last_seen_batch_id, created_time, updated_time, uuid, is_deleted, tenant_id, created_id
-            ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,0,%s,%s)
+                last_seen_batch_id, created_time, updated_time, is_deleted, tenant_id
+            ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,0,%s)
             ON DUPLICATE KEY UPDATE
                 batch_id=VALUES(batch_id),
                 relation_id=VALUES(relation_id),
@@ -1086,9 +1136,7 @@ class SmartQAPipeline:
                     batch_id,
                     now,
                     now,
-                    str(uuid4()),
                     self.tenant_id,
-                    self.created_id,
                 )
             )
         for batch in chunked(values, 1000):
@@ -1114,8 +1162,8 @@ class SmartQAPipeline:
                 batch_id, source_system, source_id, relation_id, business_id, shop_name, product_name,
                 product_id, buyer_wangwang, seller_wangwang, status, start_time, end_time, chat_content,
                 source_create_time, row_hash, first_seen_batch_id, last_seen_batch_id,
-                created_time, updated_time, uuid, is_deleted, tenant_id, created_id
-            ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,0,%s,%s)
+                created_time, updated_time, is_deleted, tenant_id
+            ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,0,%s)
             ON DUPLICATE KEY UPDATE
                 batch_id=VALUES(batch_id),
                 source_id=VALUES(source_id),
@@ -1168,9 +1216,7 @@ class SmartQAPipeline:
                     batch_id,
                     now,
                     now,
-                    str(uuid4()),
                     self.tenant_id,
-                    self.created_id,
                 )
             )
         for batch in chunked(values, 1000):
@@ -1207,9 +1253,9 @@ class SmartQAPipeline:
         cur.execute(
             """
             INSERT INTO dim_shop (
-                shop_key, source_system, shop_name, status, created_time, updated_time, uuid, is_deleted, tenant_id
+                shop_key, source_system, shop_name, status, created_time, updated_time, is_deleted, tenant_id
             )
-            SELECT CONCAT('qianniu_', LEFT(SHA2(shop_name, 256), 16)), %s, shop_name, 'active', NOW(), NOW(), UUID(), 0, %s
+            SELECT CONCAT('qianniu_', LEFT(SHA2(shop_name, 256), 16)), %s, shop_name, 'active', NOW(), NOW(), 0, %s
             FROM (SELECT DISTINCT shop_name FROM ods_qn_shop_record WHERE is_deleted=0 AND shop_name <> '') s
             ON DUPLICATE KEY UPDATE status='active', updated_time=VALUES(updated_time), is_deleted=0
             """,
@@ -1221,11 +1267,11 @@ class SmartQAPipeline:
             """
             INSERT INTO dim_product (
                 product_key, source_system, shop_id, product_id, product_name, status,
-                created_time, updated_time, uuid, is_deleted, tenant_id
+                created_time, updated_time, is_deleted, tenant_id
             )
             SELECT CONCAT('qianniu_', ds.id, '_', COALESCE(NULLIF(o.product_id, ''), SHA2(COALESCE(o.product_name, ''), 256))),
                    %s, ds.id, COALESCE(NULLIF(o.product_id, ''), CONCAT('name_', LEFT(SHA2(COALESCE(o.product_name, ''), 256), 16))),
-                   MAX(NULLIF(o.product_name, '')), 'active', NOW(), NOW(), UUID(), 0, %s
+                   MAX(NULLIF(o.product_name, '')), 'active', NOW(), NOW(), 0, %s
             FROM ods_qn_shop_record o
             JOIN dim_shop ds ON ds.source_system=%s AND ds.shop_name=o.shop_name AND ds.is_deleted=0
             WHERE o.is_deleted=0 AND (COALESCE(o.product_id, '') <> '' OR COALESCE(o.product_name, '') <> '')
@@ -1240,14 +1286,14 @@ class SmartQAPipeline:
             """
             INSERT INTO dim_staff (
                 staff_key, staff_name, primary_account, source_system, status,
-                created_time, updated_time, uuid, is_deleted, tenant_id
+                created_time, updated_time, is_deleted, tenant_id
             )
             SELECT CONCAT('qianniu_', LEFT(SHA2(seller_wangwang, 256), 16)),
                    CASE
                        WHEN LOCATE(':', seller_wangwang) > 0 THEN SUBSTRING_INDEX(seller_wangwang, ':', -1)
                        ELSE seller_wangwang
                    END,
-                   seller_wangwang, %s, 'active', NOW(), NOW(), UUID(), 0, %s
+                   seller_wangwang, %s, 'active', NOW(), NOW(), 0, %s
             FROM (SELECT DISTINCT seller_wangwang FROM ods_qn_shop_record WHERE is_deleted=0 AND seller_wangwang <> '') s
             ON DUPLICATE KEY UPDATE staff_name=VALUES(staff_name), status='active', updated_time=VALUES(updated_time), is_deleted=0
             """,
@@ -1257,11 +1303,11 @@ class SmartQAPipeline:
             """
             INSERT INTO dim_staff_account (
                 staff_account_key, staff_id, shop_id, source_system, channel, account_name, status,
-                created_time, updated_time, uuid, is_deleted, tenant_id
+                created_time, updated_time, is_deleted, tenant_id
             )
             SELECT CONCAT('qianniu_', st.id, '_', sh.id),
                    st.id, sh.id, %s, 'qianniu', o.seller_wangwang, 'active',
-                   NOW(), NOW(), UUID(), 0, %s
+                   NOW(), NOW(), 0, %s
             FROM (
                 SELECT DISTINCT seller_wangwang, shop_name
                 FROM ods_qn_shop_record
@@ -1279,7 +1325,7 @@ class SmartQAPipeline:
             """
             INSERT INTO dim_customer (
                 customer_key, primary_taobao_account, buyer_wangwang_masked, first_source,
-                first_seen_at, last_seen_at, status, created_time, updated_time, uuid, is_deleted, tenant_id
+                first_seen_at, last_seen_at, status, created_time, updated_time, is_deleted, tenant_id
             )
             SELECT CONCAT('qianniu_', SHA2(x.customer_account, 256)),
                    x.customer_account,
@@ -1288,7 +1334,7 @@ class SmartQAPipeline:
                    MIN(x.chat_time),
                    MAX(x.chat_time),
                    'active',
-                   NOW(), NOW(), UUID(), 0, %s
+                   NOW(), NOW(), 0, %s
             FROM (
                 SELECT c.chat_target AS customer_account, s.buyer_wangwang, c.chat_time
                 FROM ods_qn_chat_record c
@@ -1316,10 +1362,10 @@ class SmartQAPipeline:
             """
             INSERT INTO dim_customer_identity (
                 customer_id, identity_type, identity_value, source_system, confidence, status,
-                created_time, updated_time, uuid, is_deleted, tenant_id
+                created_time, updated_time, is_deleted, tenant_id
             )
             SELECT id, 'taobao_account', primary_taobao_account, %s, 'high', 'active',
-                   NOW(), NOW(), UUID(), 0, %s
+                   NOW(), NOW(), 0, %s
             FROM dim_customer
             WHERE first_source=%s AND is_deleted=0
             ON DUPLICATE KEY UPDATE customer_id=VALUES(customer_id), status='active', updated_time=VALUES(updated_time), is_deleted=0
@@ -1334,7 +1380,7 @@ class SmartQAPipeline:
                 conversation_key, conversation_id, source_system, relation_id, business_id,
                 shop_id, product_id, staff_id, customer_id, qn_status, start_time, end_time,
                 message_count, customer_message_count, staff_message_count, first_response_seconds,
-                avg_response_seconds, qc_status, data_hash, created_time, updated_time, uuid, is_deleted, tenant_id
+                avg_response_seconds, qc_status, data_hash, created_time, updated_time, is_deleted, tenant_id
             )
             SELECT
                 CONCAT('qianniu|', s.relation_id, '|', s.business_id),
@@ -1356,7 +1402,7 @@ class SmartQAPipeline:
                 NULL,
                 'pending',
                 SHA2(GROUP_CONCAT(CONCAT(c.source_id, ':', c.row_hash) ORDER BY c.chat_time, c.id SEPARATOR '|'), 256),
-                NOW(), NOW(), UUID(), 0, %s
+                NOW(), NOW(), 0, %s
             FROM ods_qn_shop_record s
             JOIN ods_qn_chat_record c
               ON c.source_system=s.source_system
@@ -1409,7 +1455,7 @@ class SmartQAPipeline:
             INSERT INTO dwd_qn_message (
                 message_id, conversation_id, source_system, source_message_id, message_fingerprint,
                 speaker_account, speaker_type, content_text, message_time, message_hash,
-                created_time, updated_time, uuid, is_deleted, tenant_id
+                created_time, updated_time, is_deleted, tenant_id
             )
             SELECT
                 CONCAT('msg_', LEFT(SHA2(c.source_id, 256), 16)),
@@ -1426,7 +1472,7 @@ class SmartQAPipeline:
                 c.chat_content,
                 c.chat_time,
                 SHA2(COALESCE(c.chat_content, ''), 256),
-                NOW(), NOW(), UUID(), 0, %s
+                NOW(), NOW(), 0, %s
             FROM ods_qn_chat_record c
             JOIN ods_qn_shop_record s
               ON s.source_system=c.source_system
@@ -1504,11 +1550,11 @@ class SmartQAPipeline:
             """
             INSERT INTO dwd_customer_staff_relation (
                 relation_key, customer_id, staff_id, shop_id, first_conversation_at,
-                last_conversation_at, conversation_count, created_time, updated_time, uuid, is_deleted, tenant_id
+                last_conversation_at, conversation_count, created_time, updated_time, is_deleted, tenant_id
             )
             SELECT CONCAT('cust_', customer_id, '_staff_', staff_id, '_shop_', shop_id),
                    customer_id, staff_id, shop_id, MIN(start_time), MAX(start_time), COUNT(*),
-                   NOW(), NOW(), UUID(), 0, %s
+                   NOW(), NOW(), 0, %s
             FROM dwd_qn_conversation
             WHERE is_deleted=0 AND customer_id IS NOT NULL AND staff_id IS NOT NULL AND shop_id IS NOT NULL
             GROUP BY customer_id, staff_id, shop_id
@@ -1574,6 +1620,49 @@ class SmartQAPipeline:
 
     def _bind_user_role(self, cur: pymysql.cursors.DictCursor, user_id: int, role_id: int) -> None:
         cur.execute("INSERT IGNORE INTO sys_user_roles (user_id, role_id) VALUES (%s,%s)", (user_id, role_id))
+
+    def _ensure_tenant(self, cur: pymysql.cursors.DictCursor) -> dict[str, Any]:
+        cur.execute(
+            """
+            SELECT id
+            FROM platform_tenant
+            WHERE id=%s OR code='system'
+            ORDER BY id=%s DESC, id ASC
+            LIMIT 1
+            """,
+            (self.tenant_id, self.tenant_id),
+        )
+        row = cur.fetchone()
+        values = (
+            "SmartQA",
+            "system",
+            "SmartQA Service Cloud",
+            "1.1.0",
+            "Copyright © 2026 SmartQA",
+            "https://github.com/Yeraphael/SmartQA-Service-Cloud",
+        )
+        if row:
+            cur.execute(
+                """
+                UPDATE platform_tenant
+                SET name=%s, code=%s, description=%s, version=%s, copyright=%s,
+                    git_code=%s, status=0, updated_time=NOW(), is_deleted=0
+                WHERE id=%s
+                """,
+                (*values, row["id"]),
+            )
+            return {"tenant_id": row["id"], "created": False, "version": "1.1.0"}
+
+        cur.execute(
+            """
+            INSERT INTO platform_tenant (
+                id, name, code, description, version, copyright, git_code, status,
+                created_time, updated_time, uuid, is_deleted
+            ) VALUES (%s,%s,%s,%s,%s,%s,%s,0,NOW(),NOW(),UUID(),0)
+            """,
+            (self.tenant_id, *values),
+        )
+        return {"tenant_id": self.tenant_id, "created": True, "version": "1.1.0"}
 
     def _ensure_staff_users(self, cur: pymysql.cursors.DictCursor, role_id: int) -> dict[str, int]:
         cur.execute("SELECT * FROM dim_staff WHERE is_deleted=0 AND status='active' ORDER BY id")
@@ -1764,19 +1853,33 @@ class SmartQAPipeline:
         }
         boss_children = [
             ("工作台总览", "SmartQADashboard", "dashboard", "module_smartqa/dashboard/index", "ri:dashboard-line"),
-            ("千牛数据源", "SmartQAQianniuData", "qianniu-data", "module_smartqa/qianniu-data/index", "ri:database-2-line"),
-            ("会话管理", "SmartQAConversations", "conversations", "module_smartqa/conversations/index", "ri:message-3-line"),
-            ("AI质检任务", "SmartQAQcTasks", "qc-tasks", "module_smartqa/qc-tasks/index", "ri:robot-2-line"),
-            ("质检结果", "SmartQAQcResults", "qc-results", "module_smartqa/qc-results/index", "ri:file-chart-line"),
             ("客服表现", "SmartQAStaffPerformance", "staff-performance", "module_smartqa/staff-performance/index", "ri:bar-chart-grouped-line"),
-            ("质检规则", "SmartQAQcRules", "qc-rules", "module_smartqa/qc-rules/index", "ri:survey-line"),
-            ("客服账号", "SmartQAStaffUsers", "staff-users", "module_smartqa/staff-users/index", "ri:user-settings-line"),
+            ("客户商机", "SmartQACustomerOpportunities", "customer-opportunities", "module_smartqa/customer-opportunities/index", "ri:user-search-line"),
+            ("商品机会", "SmartQAProductOpportunities", "product-opportunities", "module_smartqa/product-opportunities/index", "ri:shopping-bag-3-line"),
+            ("会话复盘", "SmartQAConversations", "conversations", "module_smartqa/conversations/index", "ri:message-3-line"),
+            ("客服管理", "SmartQAStaffUsers", "staff-users", "module_smartqa/staff-users/index", "ri:user-settings-line"),
+        ]
+        data_config = {
+            "name": "数据与配置",
+            "type": 1,
+            "icon": "ri:settings-5-line",
+            "order": 7,
+            "permission": "module_smartqa:data-config:query",
+            "route_name": "SmartQADataConfig",
+            "route_path": "data-config",
+            "component_path": None,
+            "redirect": "/smartqa/data-config/qc-tasks",
+        }
+        data_config_children = [
+            ("AI分析任务", "SmartQAQcTasks", "qc-tasks", "module_smartqa/qc-tasks/index", "ri:robot-2-line"),
+            ("每日数据批次", "SmartQAQianniuData", "qianniu-data", "module_smartqa/qianniu-data/index", "ri:database-2-line"),
+            ("规则配置", "SmartQAQcRules", "qc-rules", "module_smartqa/qc-rules/index", "ri:survey-line"),
         ]
         staff_children = [
             ("我的工作台", "SmartQAMyDashboard", "my-dashboard", "module_smartqa/my-dashboard/index", "ri:home-smile-line"),
-            ("我的意向客户", "SmartQAMyConversations", "my-conversations", "module_smartqa/my-conversations/index", "ri:user-search-line"),
-            ("我的质检结果", "SmartQAMyQcResults", "my-qc-results", "module_smartqa/my-qc-results/index", "ri:file-list-3-line"),
-            ("我的改进建议", "SmartQAMyImprovements", "my-improvements", "module_smartqa/my-improvements/index", "ri:lightbulb-flash-line"),
+            ("客户跟进", "SmartQAMyConversations", "my-conversations", "module_smartqa/my-conversations/index", "ri:user-follow-line"),
+            ("会话复盘", "SmartQAMyQcResults", "my-qc-results", "module_smartqa/my-qc-results/index", "ri:file-list-3-line"),
+            ("个人账号", "SmartQAMyAccount", "my-account", "account/profile/index", "ri:user-line"),
         ]
         changed = 0
         boss_menu_ids: list[int] = []
@@ -1790,11 +1893,23 @@ class SmartQAPipeline:
             cur.execute(
                 """
                 UPDATE platform_menu
-                SET name=%s, title=%s, route_path=%s, redirect=%s, hidden=0, status=0,
-                    parent_id=NULL, updated_time=NOW()
+                SET name=%s, title=%s, type=%s, `order`=%s, permission=%s, icon=%s,
+                    route_path=%s, component_path=%s, redirect=%s, hidden=0, status=0,
+                    always_show=1, parent_id=NULL, updated_time=NOW()
                 WHERE id=%s
                 """,
-                (root["name"], root["name"], root["route_path"], root["redirect"], root_id),
+                (
+                    root["name"],
+                    root["name"],
+                    root["type"],
+                    root["order"],
+                    root["permission"],
+                    root["icon"],
+                    root["route_path"],
+                    root["component_path"],
+                    root["redirect"],
+                    root_id,
+                ),
             )
         else:
             cur.execute(
@@ -1826,7 +1941,63 @@ class SmartQAPipeline:
         staff_menu_ids.append(root_id)
         all_menu_ids.append(root_id)
 
-        def ensure_child(idx: int, item: tuple[str, str, str, str, str]) -> int:
+        def ensure_group(item: dict[str, Any], parent_id: int) -> int:
+            nonlocal changed
+            cur.execute("SELECT id FROM platform_menu WHERE route_name=%s AND is_deleted=0", (item["route_name"],))
+            group = cur.fetchone()
+            if group:
+                group_id = group["id"]
+                cur.execute(
+                    """
+                    UPDATE platform_menu
+                    SET name=%s, title=%s, type=%s, `order`=%s, permission=%s, icon=%s,
+                        route_path=%s, component_path=%s, redirect=%s, hidden=0, status=0,
+                        always_show=1, parent_id=%s, updated_time=NOW()
+                    WHERE id=%s
+                    """,
+                    (
+                        item["name"],
+                        item["name"],
+                        item["type"],
+                        item["order"],
+                        item["permission"],
+                        item["icon"],
+                        item["route_path"],
+                        item["component_path"],
+                        item["redirect"],
+                        parent_id,
+                        group_id,
+                    ),
+                )
+                return group_id
+
+            cur.execute(
+                """
+                INSERT INTO platform_menu (
+                    name, type, `order`, permission, icon, route_name, route_path, component_path,
+                    redirect, hidden, keep_alive, always_show, title, params, affix, client, link,
+                    is_iframe, is_hide_tab, active_path, show_badge, show_text_badge, scope, status,
+                    description, parent_id, created_time, updated_time, uuid, is_deleted
+                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,0,1,1,%s,NULL,0,'pc',NULL,0,0,NULL,0,NULL,'tenant',0,'SmartQA P0',%s,NOW(),NOW(),UUID(),0)
+                """,
+                (
+                    item["name"],
+                    item["type"],
+                    item["order"],
+                    item["permission"],
+                    item["icon"],
+                    item["route_name"],
+                    item["route_path"],
+                    item["component_path"],
+                    item["redirect"],
+                    item["name"],
+                    parent_id,
+                ),
+            )
+            changed += 1
+            return cur.lastrowid
+
+        def ensure_child(idx: int, item: tuple[str, str, str, str, str], parent_id: int) -> int:
             nonlocal changed
             name, route_name, route_path, component_path, icon = item
             permission = f"module_smartqa:{route_path}:query"
@@ -1837,11 +2008,12 @@ class SmartQAPipeline:
                 cur.execute(
                     """
                     UPDATE platform_menu
-                    SET name=%s, title=%s, `order`=%s, permission=%s, icon=%s, route_path=%s,
-                        component_path=%s, hidden=0, status=0, parent_id=%s, updated_time=NOW()
+                    SET name=%s, title=%s, type=2, `order`=%s, permission=%s, icon=%s, route_path=%s,
+                        component_path=%s, redirect=NULL, hidden=0, status=0, always_show=0,
+                        parent_id=%s, updated_time=NOW()
                     WHERE id=%s
                     """,
-                    (name, name, idx, permission, icon, route_path, component_path, root_id, child_id),
+                    (name, name, idx, permission, icon, route_path, component_path, parent_id, child_id),
                 )
                 return child_id
             cur.execute(
@@ -1853,18 +2025,26 @@ class SmartQAPipeline:
                     description, parent_id, created_time, updated_time, uuid, is_deleted
                 ) VALUES (%s,2,%s,%s,%s,%s,%s,%s,NULL,0,1,0,%s,NULL,0,'pc',NULL,0,0,NULL,0,NULL,'tenant',0,'SmartQA P0',%s,NOW(),NOW(),UUID(),0)
                 """,
-                (name, idx, permission, icon, route_name, route_path, component_path, name, root_id),
+                (name, idx, permission, icon, route_name, route_path, component_path, name, parent_id),
             )
             changed += 1
             return cur.lastrowid
 
         for idx, item in enumerate(boss_children, start=1):
-            menu_id = ensure_child(idx, item)
+            menu_id = ensure_child(idx, item, root_id)
             boss_menu_ids.append(menu_id)
             all_menu_ids.append(menu_id)
 
-        for idx, item in enumerate(staff_children, start=len(boss_children) + 1):
-            menu_id = ensure_child(idx, item)
+        data_config_id = ensure_group(data_config, root_id)
+        boss_menu_ids.append(data_config_id)
+        all_menu_ids.append(data_config_id)
+        for idx, item in enumerate(data_config_children, start=1):
+            menu_id = ensure_child(idx, item, data_config_id)
+            boss_menu_ids.append(menu_id)
+            all_menu_ids.append(menu_id)
+
+        for idx, item in enumerate(staff_children, start=len(boss_children) + 2):
+            menu_id = ensure_child(idx, item, root_id)
             staff_menu_ids.append(menu_id)
             all_menu_ids.append(menu_id)
 

@@ -54,7 +54,7 @@ export class StorageConfig {
   static readonly RESPONSIVE_MENU_TYPE_KEY = "sys-responsive-menu-type";
 
   /** 跳过升级检查的版本 */
-  static readonly SKIP_UPGRADE_VERSION = "1.0.0";
+  static readonly SKIP_UPGRADE_VERSION = "1.1.0";
 
   /** 升级处理延迟时间（毫秒） */
   static readonly UPGRADE_DELAY = 1000;

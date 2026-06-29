@@ -30,7 +30,13 @@ class QcTaskExecutor:
 
     def __init__(self, auth: AuthSchema | None = None):
         self.auth = auth
-        self.ai_client = QwenClient()
+        self._ai_client: QwenClient | None = None
+
+    @property
+    def ai_client(self) -> QwenClient:
+        if self._ai_client is None:
+            self._ai_client = QwenClient()
+        return self._ai_client
 
     async def create_tasks(
         self,
@@ -83,7 +89,7 @@ class QcTaskExecutor:
                 model_name=model_name or settings.SMARTQA_ALI_MODEL_NAME,
                 status="pending",
                 tenant_id=self.auth.tenant_id if self.auth else None,
-                created_id=self.auth.user_id if self.auth else None,
+                created_id=self.auth.user.id if self.auth and self.auth.user else None,
             )
             session.add(task)
             tasks.append(task)
@@ -298,7 +304,7 @@ class QcTaskExecutor:
             dimension_scores=dimension_scores,
             confidence=result_json.get("confidence"),
             tenant_id=self.auth.tenant_id if self.auth else None,
-            created_id=self.auth.user_id if self.auth else None,
+            created_id=self.auth.user.id if self.auth and self.auth.user else None,
         )
         session.add(qc_result)
         await session.flush()
@@ -317,7 +323,7 @@ class QcTaskExecutor:
                 suggested_reply=issue_data.get("suggested_reply"),
                 deduction_score=issue_data.get("deduction_score", 0),
                 tenant_id=self.auth.tenant_id if self.auth else None,
-                created_id=self.auth.user_id if self.auth else None,
+                created_id=self.auth.user.id if self.auth and self.auth.user else None,
             )
             session.add(qc_issue)
             await session.flush()
@@ -339,7 +345,7 @@ class QcTaskExecutor:
                         message_id=msg.id,
                         evidence_text=msg.content_text,
                         tenant_id=self.auth.tenant_id if self.auth else None,
-                        created_id=self.auth.user_id if self.auth else None,
+                        created_id=self.auth.user.id if self.auth and self.auth.user else None,
                     )
                     session.add(evidence)
 

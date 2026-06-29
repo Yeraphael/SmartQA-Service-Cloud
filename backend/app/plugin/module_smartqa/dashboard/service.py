@@ -1,5 +1,6 @@
 import json
-from datetime import datetime
+from collections import Counter, defaultdict
+from datetime import date, datetime, timedelta
 from typing import Any
 
 from sqlalchemy import case, desc, func, or_, select
@@ -8,12 +9,65 @@ from app.core.base_schema import AuthSchema
 from app.plugin.module_smartqa.common.access import build_staff_scope_condition
 from app.plugin.module_smartqa.models.conversation import DwdQnConversationModel
 from app.plugin.module_smartqa.models.dimension import DimCustomerModel, DimProductModel, DimShopModel, DimStaffModel
+from app.plugin.module_smartqa.models.ods import OdsImportBatchModel
 from app.plugin.module_smartqa.models.qc import QcIssueModel, QcResultModel, QcTaskModel
 
 
 class DashboardService:
     def __init__(self, auth: AuthSchema) -> None:
         self.auth = auth
+
+    DIMENSIONS: tuple[dict[str, Any], ...] = (
+        {"key": "overall", "label": "综合表现", "aliases": ()},
+        {"key": "response_efficiency", "label": "响应效率", "aliases": ("响应效率", "SQ01_RESPONSE_TIMELY", "SQ01", "response_efficiency", "response", "timely")},
+        {"key": "service_attitude", "label": "服务态度", "aliases": ("服务态度", "SQ07_ATTITUDE_WARMTH", "SQ07", "attitude", "warmth", "service_attitude")},
+        {"key": "professional_ability", "label": "专业能力", "aliases": ("专业能力", "SQ04_PRODUCT_PROFESSIONAL", "SQ04", "professional", "product_professional", "professional_ability")},
+        {"key": "problem_solving", "label": "问题解决", "aliases": ("问题解决", "SQ05_SOLUTION_COMPLETE", "SQ05", "solution", "problem_solving", "problem")},
+        {"key": "demand_mining", "label": "需求挖掘", "aliases": ("需求挖掘", "SQ03_NEED_PROBE", "SQ03", "need_probe", "demand_mining", "need")},
+        {"key": "conversion_progress", "label": "成交推进", "aliases": ("成交推进", "SQ06_CONVERSION_CONTACT", "SQ06", "conversion", "contact", "conversion_progress")},
+    )
+
+    ISSUE_DIMENSION_MAP: dict[str, str] = {
+        "SQ01_RESPONSE_TIMELY": "response_efficiency",
+        "SQ02_RECEPTION_COMPLETE": "service_attitude",
+        "SQ03_NEED_PROBE": "demand_mining",
+        "SQ04_PRODUCT_PROFESSIONAL": "professional_ability",
+        "SQ05_SOLUTION_COMPLETE": "problem_solving",
+        "SQ06_CONVERSION_CONTACT": "conversion_progress",
+        "SQ07_ATTITUDE_WARMTH": "service_attitude",
+        "SQ08_OBJECTION_HANDLING": "conversion_progress",
+        "SQ09_COMPLIANCE_RISK": "problem_solving",
+        "SQ10_HANDOFF_RECORD": "conversion_progress",
+    }
+
+    async def boss_workbench(self) -> dict:
+        """老板工作台聚合数据。
+
+        工作台只返回当前页面需要的数据：顶部状态、核心指标、客服质检榜单、
+        选中客服详情所需能力分、客服能力四象限、商品机会和近 7 日趋势。
+        """
+
+        scope_condition = await build_staff_scope_condition(self.auth)
+        latest_batch = await self._latest_batch()
+        result_rows = await self._quality_rows(scope_condition)
+        issue_rows = await self._quality_issue_rows(scope_condition)
+        intent_rows = await self.intent_customers(limit=200)
+        products = await self.product_opportunities(limit=5)
+
+        staff_items = self._build_staff_quality_items(result_rows, issue_rows, intent_rows)
+        trend = self._build_trend(result_rows, intent_rows)
+        overview = self._build_boss_overview(latest_batch, result_rows, staff_items, intent_rows)
+        quadrant = self._build_quadrant(staff_items)
+
+        return {
+            "status": overview["status"],
+            "metrics": overview["metrics"],
+            "dimensions": [{"key": item["key"], "label": item["label"]} for item in self.DIMENSIONS],
+            "staff_quality": staff_items,
+            "quadrant": quadrant,
+            "product_opportunities": products,
+            "trend_7d": trend,
+        }
 
     async def overview(self) -> dict:
         scope_condition = await build_staff_scope_condition(self.auth)
@@ -389,19 +443,6 @@ class DashboardService:
             out = [row for row in out if row["intent_tier"] == tier]
         return sorted(out, key=lambda row: (self._tier_rank(row["intent_tier"]), -int(row.get("intent_score") or 0), row.get("silent_hours") or 0))
 
-    async def opportunity_funnel(self) -> list[dict]:
-        rows = await self.intent_customers(limit=200)
-        stages = [
-            ("consult", "有效咨询", len(rows)),
-            ("need_clear", "需求明确", sum(1 for row in rows if row.get("need_summary") or row.get("need_type") not in {"unknown", ""})),
-            ("quote", "报价/询价", sum(1 for row in rows if row.get("quote_given") or "报价" in (row.get("need_summary") or ""))),
-            ("contact_asked", "已询问留资", sum(1 for row in rows if row.get("contact_requested"))),
-            ("contact_provided", "客户已留资", sum(1 for row in rows if row.get("contact_provided"))),
-            ("handoff", "可承接", sum(1 for row in rows if row.get("xianfa_handoff_status") in {"ready", "matched", "converted"})),
-        ]
-        total = stages[0][2] or 1
-        return [{"stage": code, "label": label, "value": value, "rate": self._rate(value, total)} for code, label, value in stages]
-
     async def product_opportunities(self, limit: int = 20) -> list[dict]:
         rows = await self.intent_customers(limit=200)
         grouped: dict[str, dict[str, Any]] = {}
@@ -547,3 +588,393 @@ class DashboardService:
         if risk_level in {"high", "critical"}:
             flags.append("服务高风险")
         return flags
+
+    async def _latest_batch(self) -> OdsImportBatchModel | None:
+        stmt = (
+            select(OdsImportBatchModel)
+            .where(OdsImportBatchModel.is_deleted == False)  # noqa: E712
+            .order_by(desc(OdsImportBatchModel.finished_at), desc(OdsImportBatchModel.created_time), desc(OdsImportBatchModel.id))
+            .limit(1)
+        )
+        return (await self.auth.db.execute(stmt)).scalars().first()
+
+    async def _quality_rows(self, scope_condition: Any | None) -> list[dict[str, Any]]:
+        stmt = (
+            select(
+                QcResultModel.id.label("result_pk"),
+                QcResultModel.score,
+                QcResultModel.result_level,
+                QcResultModel.risk_level,
+                QcResultModel.summary,
+                QcResultModel.dimension_scores,
+                QcResultModel.created_time.label("result_created_time"),
+                QcTaskModel.finished_at.label("task_finished_at"),
+                QcTaskModel.response_json,
+                DwdQnConversationModel.id.label("conversation_pk"),
+                DwdQnConversationModel.conversation_id,
+                DwdQnConversationModel.start_time,
+                DwdQnConversationModel.end_time,
+                DwdQnConversationModel.message_count,
+                DwdQnConversationModel.first_response_seconds,
+                DwdQnConversationModel.avg_response_seconds,
+                DimStaffModel.id.label("staff_id"),
+                DimStaffModel.staff_name,
+                DimStaffModel.primary_account,
+                DimProductModel.product_id,
+                DimProductModel.product_name,
+            )
+            .select_from(QcResultModel)
+            .join(QcTaskModel, QcResultModel.task_id == QcTaskModel.id)
+            .join(DwdQnConversationModel, QcResultModel.conversation_id == DwdQnConversationModel.id)
+            .outerjoin(DimStaffModel, DwdQnConversationModel.staff_id == DimStaffModel.id)
+            .outerjoin(DimProductModel, DwdQnConversationModel.product_id == DimProductModel.id)
+            .where(
+                QcResultModel.is_deleted == False,  # noqa: E712
+                QcTaskModel.is_deleted == False,  # noqa: E712
+                DwdQnConversationModel.is_deleted == False,  # noqa: E712
+                QcTaskModel.status == "success",
+            )
+            .order_by(desc(QcResultModel.created_time), desc(QcResultModel.id))
+            .limit(2000)
+        )
+        if scope_condition is not None:
+            stmt = stmt.where(scope_condition)
+        return [dict(row) for row in (await self.auth.db.execute(stmt)).mappings().all()]
+
+    async def _quality_issue_rows(self, scope_condition: Any | None) -> list[dict[str, Any]]:
+        stmt = (
+            select(
+                QcResultModel.id.label("result_pk"),
+                DwdQnConversationModel.staff_id,
+                QcIssueModel.rule_code,
+                QcIssueModel.severity,
+                QcIssueModel.title,
+                QcIssueModel.reason,
+                QcIssueModel.suggested_action,
+                QcIssueModel.deduction_score,
+            )
+            .select_from(QcIssueModel)
+            .join(QcResultModel, QcIssueModel.result_id == QcResultModel.id)
+            .join(DwdQnConversationModel, QcResultModel.conversation_id == DwdQnConversationModel.id)
+            .where(
+                QcIssueModel.is_deleted == False,  # noqa: E712
+                QcResultModel.is_deleted == False,  # noqa: E712
+                DwdQnConversationModel.is_deleted == False,  # noqa: E712
+            )
+            .order_by(desc(QcIssueModel.created_time), desc(QcIssueModel.id))
+            .limit(5000)
+        )
+        if scope_condition is not None:
+            stmt = stmt.where(scope_condition)
+        return [dict(row) for row in (await self.auth.db.execute(stmt)).mappings().all()]
+
+    def _build_boss_overview(
+        self,
+        latest_batch: OdsImportBatchModel | None,
+        rows: list[dict[str, Any]],
+        staff_items: list[dict[str, Any]],
+        intent_rows: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        score_values = [float(row.get("score") or 0) for row in rows if row.get("score") is not None]
+        avg_response_values = [int(row.get("avg_response_seconds") or 0) for row in rows if row.get("avg_response_seconds")]
+        ai_finished_at = max((row.get("task_finished_at") or row.get("result_created_time") for row in rows if row.get("task_finished_at") or row.get("result_created_time")), default=None)
+        data_date = max((row.get("start_time").date() for row in rows if isinstance(row.get("start_time"), datetime)), default=None)
+        high_intent_pending = self._pending_intent_count(intent_rows)
+        need_attention_staff = sum(1 for row in staff_items if row.get("overall_score", 0) < 80)
+        status_text = self._system_status(latest_batch, rows)
+
+        return {
+            "status": {
+                "data_date": data_date,
+                "rpa_fetch_time": latest_batch.finished_at if latest_batch else None,
+                "ai_finished_time": ai_finished_at,
+                "analyzed_conversation_count": len({row.get("conversation_pk") for row in rows if row.get("conversation_pk")}),
+                "covered_staff_count": len({row.get("staff_id") for row in rows if row.get("staff_id")}),
+                "system_status": status_text,
+            },
+            "metrics": {
+                "service_quality_score": self._avg(score_values),
+                "high_risk_conversation_count": sum(1 for row in rows if row.get("risk_level") in {"high", "critical"}),
+                "need_attention_staff_count": need_attention_staff,
+                "high_intent_pending_count": high_intent_pending,
+                "avg_response_seconds": round(sum(avg_response_values) / len(avg_response_values)) if avg_response_values else 0,
+                "conversation_count": len({row.get("conversation_pk") for row in rows if row.get("conversation_pk")}),
+            },
+        }
+
+    def _build_staff_quality_items(
+        self,
+        rows: list[dict[str, Any]],
+        issue_rows: list[dict[str, Any]],
+        intent_rows: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        staff_bucket: dict[int, dict[str, Any]] = {}
+        result_issue_map: dict[int, list[dict[str, Any]]] = defaultdict(list)
+        staff_issue_titles: dict[int, Counter[str]] = defaultdict(Counter)
+        staff_issue_dimension: dict[int, dict[str, int]] = defaultdict(lambda: defaultdict(int))
+
+        for issue in issue_rows:
+            result_pk = issue.get("result_pk")
+            staff_id = issue.get("staff_id")
+            if result_pk:
+                result_issue_map[int(result_pk)].append(issue)
+            if staff_id:
+                title = issue.get("title") or issue.get("rule_code") or "服务问题"
+                staff_issue_titles[int(staff_id)][title] += 1
+                dimension_key = self.ISSUE_DIMENSION_MAP.get(str(issue.get("rule_code") or ""), "problem_solving")
+                staff_issue_dimension[int(staff_id)][dimension_key] += int(issue.get("deduction_score") or 0)
+
+        intent_stats = self._staff_intent_stats(intent_rows)
+
+        for row in rows:
+            staff_id = row.get("staff_id")
+            if not staff_id:
+                continue
+            staff_id = int(staff_id)
+            item = staff_bucket.setdefault(
+                staff_id,
+                {
+                    "staff_id": staff_id,
+                    "staff_name": row.get("staff_name") or "未绑定客服",
+                    "primary_account": row.get("primary_account") or "",
+                    "conversation_count": 0,
+                    "qc_count": 0,
+                    "score_sum": 0.0,
+                    "high_risk_count": 0,
+                    "dimension_sum": defaultdict(float),
+                    "dimension_count": defaultdict(int),
+                    "trend_bucket": defaultdict(list),
+                },
+            )
+            score = float(row.get("score") or 0)
+            item["qc_count"] += 1
+            item["conversation_count"] += 1
+            item["score_sum"] += score
+            if row.get("risk_level") in {"high", "critical"}:
+                item["high_risk_count"] += 1
+
+            dimension_scores = self._extract_dimension_scores(row, result_issue_map.get(int(row.get("result_pk") or 0), []), score)
+            for key, value in dimension_scores.items():
+                item["dimension_sum"][key] += float(value)
+                item["dimension_count"][key] += 1
+
+            trend_date = row.get("start_time") or row.get("result_created_time")
+            if isinstance(trend_date, datetime):
+                item["trend_bucket"][trend_date.date()].append(score)
+
+        staff_items: list[dict[str, Any]] = []
+        for staff_id, item in staff_bucket.items():
+            qc_count = int(item["qc_count"] or 0)
+            overall_score = round(float(item["score_sum"]) / qc_count, 1) if qc_count else 0.0
+            dimensions = {"overall": overall_score}
+            for dim in self.DIMENSIONS:
+                key = dim["key"]
+                if key == "overall":
+                    continue
+                if item["dimension_count"].get(key):
+                    value = item["dimension_sum"][key] / item["dimension_count"][key]
+                else:
+                    deduction = staff_issue_dimension.get(staff_id, {}).get(key, 0)
+                    value = max(overall_score - min(deduction / max(qc_count, 1), 18), 0)
+                dimensions[key] = round(float(value), 1)
+
+            trend = self._staff_trend(item["trend_bucket"])
+            main_issue = staff_issue_titles.get(staff_id, Counter()).most_common(1)
+            staff_items.append(
+                {
+                    "staff_id": staff_id,
+                    "staff_name": item["staff_name"],
+                    "primary_account": item["primary_account"],
+                    "role_label": "客服专员",
+                    "qc_count": qc_count,
+                    "conversation_count": item["conversation_count"],
+                    "overall_score": overall_score,
+                    "dimensions": dimensions,
+                    "high_risk_count": item["high_risk_count"],
+                    "pending_intent_count": intent_stats.get(staff_id, {}).get("h_customer_count", 0),
+                    "main_issue": main_issue[0][0] if main_issue else "暂无突出问题",
+                    "trend": trend,
+                }
+            )
+
+        return sorted(staff_items, key=lambda row: (row["overall_score"], row["qc_count"]), reverse=True)
+
+    def _extract_dimension_scores(self, row: dict[str, Any], issues: list[dict[str, Any]], fallback_score: float) -> dict[str, float]:
+        raw_scores = row.get("dimension_scores") or {}
+        payload = row.get("response_json") or {}
+        if isinstance(payload, str):
+            try:
+                payload = json.loads(payload)
+            except json.JSONDecodeError:
+                payload = {}
+        staff_quality = payload.get("staff_quality") or {}
+        raw_scores = raw_scores or staff_quality.get("dimension_scores") or payload.get("dimension_scores") or {}
+        if isinstance(raw_scores, str):
+            try:
+                raw_scores = json.loads(raw_scores)
+            except json.JSONDecodeError:
+                raw_scores = {}
+
+        result: dict[str, float] = {}
+        for dim in self.DIMENSIONS:
+            key = dim["key"]
+            if key == "overall":
+                continue
+            value = self._dimension_value(raw_scores, dim["aliases"])
+            if value is not None:
+                result[key] = value
+
+        if len(result) < len(self.DIMENSIONS) - 1:
+            deduction_map: dict[str, int] = defaultdict(int)
+            for issue in issues:
+                dim_key = self.ISSUE_DIMENSION_MAP.get(str(issue.get("rule_code") or ""), "problem_solving")
+                deduction_map[dim_key] += int(issue.get("deduction_score") or 0)
+            for dim in self.DIMENSIONS:
+                key = dim["key"]
+                if key == "overall" or key in result:
+                    continue
+                result[key] = max(min(float(fallback_score) - min(deduction_map.get(key, 0), 30) * 0.65, 100), 0)
+        return result
+
+    @staticmethod
+    def _dimension_value(raw_scores: Any, aliases: tuple[str, ...]) -> float | None:
+        if not isinstance(raw_scores, dict):
+            return None
+        normalized = {str(k).lower(): v for k, v in raw_scores.items()}
+        for alias in aliases:
+            lookup = alias.lower()
+            for raw_key, raw_value in normalized.items():
+                if lookup == raw_key or lookup in raw_key:
+                    if isinstance(raw_value, dict):
+                        raw_value = raw_value.get("score") or raw_value.get("value")
+                    try:
+                        return round(float(raw_value), 1)
+                    except (TypeError, ValueError):
+                        continue
+        return None
+
+    def _build_quadrant(self, staff_items: list[dict[str, Any]]) -> dict[str, Any]:
+        points = []
+        for row in staff_items:
+            dimensions = row.get("dimensions") or {}
+            service_efficiency = self._avg([
+                dimensions.get("response_efficiency", 0),
+                dimensions.get("problem_solving", 0),
+                dimensions.get("conversion_progress", 0),
+            ])
+            quality_score = self._avg([
+                row.get("overall_score", 0),
+                dimensions.get("service_attitude", 0),
+                dimensions.get("professional_ability", 0),
+                dimensions.get("demand_mining", 0),
+            ])
+            points.append(
+                {
+                    "staff_id": row["staff_id"],
+                    "staff_name": row["staff_name"],
+                    "x": service_efficiency,
+                    "y": quality_score,
+                    "score": row.get("overall_score", 0),
+                    "status": self._score_status(row.get("overall_score", 0)),
+                }
+            )
+        return {
+            "x_axis": "服务效率分",
+            "y_axis": "服务质量分",
+            "points": points,
+        }
+
+    def _build_trend(self, rows: list[dict[str, Any]], intent_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        today = self._latest_business_date(rows) or date.today()
+        days = [today - timedelta(days=offset) for offset in range(6, -1, -1)]
+        score_bucket: dict[date, list[float]] = defaultdict(list)
+        risk_bucket: Counter[date] = Counter()
+        conversation_bucket: set[tuple[date, int]] = set()
+
+        for row in rows:
+            current = row.get("start_time") or row.get("result_created_time")
+            if not isinstance(current, datetime):
+                continue
+            day = current.date()
+            if day not in days:
+                continue
+            score_bucket[day].append(float(row.get("score") or 0))
+            if row.get("risk_level") in {"high", "critical"}:
+                risk_bucket[day] += 1
+            if row.get("conversation_pk"):
+                conversation_bucket.add((day, int(row["conversation_pk"])))
+
+        intent_bucket: Counter[date] = Counter()
+        for row in intent_rows:
+            start_time = row.get("start_time")
+            if isinstance(start_time, str):
+                try:
+                    start_time = datetime.fromisoformat(start_time)
+                except ValueError:
+                    start_time = None
+            if isinstance(start_time, datetime) and start_time.date() in days and self._is_pending_high_intent(row):
+                intent_bucket[start_time.date()] += 1
+
+        return [
+            {
+                "date": day.strftime("%m-%d"),
+                "quality_score": self._avg(score_bucket.get(day, [])),
+                "high_risk_count": risk_bucket.get(day, 0),
+                "pending_intent_count": intent_bucket.get(day, 0),
+                "conversation_count": sum(1 for item in conversation_bucket if item[0] == day),
+            }
+            for day in days
+        ]
+
+    @staticmethod
+    def _latest_business_date(rows: list[dict[str, Any]]) -> date | None:
+        dates = [
+            value.date()
+            for row in rows
+            for value in [row.get("start_time"), row.get("result_created_time")]
+            if isinstance(value, datetime)
+        ]
+        return max(dates) if dates else None
+
+    def _staff_trend(self, bucket: dict[date, list[float]]) -> list[dict[str, Any]]:
+        today = max(bucket.keys(), default=date.today())
+        days = [today - timedelta(days=offset) for offset in range(6, -1, -1)]
+        return [{"date": day.strftime("%m-%d"), "score": self._avg(bucket.get(day, []))} for day in days]
+
+    @staticmethod
+    def _avg(values: list[int | float]) -> float:
+        values = [float(value) for value in values if value is not None]
+        if not values:
+            return 0.0
+        return round(sum(values) / len(values), 1)
+
+    @staticmethod
+    def _pending_intent_count(rows: list[dict[str, Any]]) -> int:
+        return sum(1 for row in rows if DashboardService._is_pending_high_intent(row))
+
+    @staticmethod
+    def _is_pending_high_intent(row: dict[str, Any]) -> bool:
+        return row.get("intent_tier") in {"H1", "H2"} and not (
+            row.get("contact_requested")
+            or row.get("contact_provided")
+            or row.get("xianfa_handoff_status") in {"ready", "matched", "converted"}
+        )
+
+    @staticmethod
+    def _system_status(latest_batch: OdsImportBatchModel | None, rows: list[dict[str, Any]]) -> str:
+        if not rows:
+            return "待分析"
+        if latest_batch and latest_batch.status not in {"success", "completed"}:
+            return "处理中" if latest_batch.status in {"pending", "running"} else "部分异常"
+        return "正常"
+
+    @staticmethod
+    def _score_status(score: int | float) -> str:
+        score = float(score or 0)
+        if score >= 90:
+            return "优秀"
+        if score >= 80:
+            return "良好"
+        if score >= 70:
+            return "需关注"
+        return "需改进"

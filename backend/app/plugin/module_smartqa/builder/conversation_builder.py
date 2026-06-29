@@ -90,7 +90,7 @@ class ConversationBuilder:
                 existing_conv.product_id = product_pk
                 existing_conv.staff_id = staff_pk
                 existing_conv.customer_id = customer_pk
-                existing_conv.updated_at = datetime.now()
+                existing_conv.updated_time = datetime.now()
                 conversation_pk = existing_conv.id
             else:
                 new_conv = DwdQnConversationModel(
@@ -274,7 +274,7 @@ class ConversationBuilder:
                     existing_rel.first_conversation_at = first_time
                 if last_time and (not existing_rel.last_conversation_at or last_time > existing_rel.last_conversation_at):
                     existing_rel.last_conversation_at = last_time
-                existing_rel.updated_at = datetime.now()
+                existing_rel.updated_time = datetime.now()
             else:
                 new_relation = DwdCustomerStaffRelationModel(
                     relation_key=relation_key,

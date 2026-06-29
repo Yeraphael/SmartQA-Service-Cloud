@@ -52,7 +52,21 @@ class TestCurrentUser:
 
         menu_titles = _flatten_menu_titles(data.get("menus") or [])
         assert "工作台总览" in menu_titles
-        assert "客服账号" in menu_titles
+        assert "客服表现" in menu_titles
+        assert "客户商机" in menu_titles
+        assert "商品机会" in menu_titles
+        assert "客服管理" in menu_titles
+        assert "数据与配置" in menu_titles
+        assert _child_titles(data.get("menus") or [], "SmartQA") >= {
+            "工作台总览",
+            "客服表现",
+            "客户商机",
+            "商品机会",
+            "会话复盘",
+            "客服管理",
+            "数据与配置",
+        }
+        assert _child_titles(data.get("menus") or [], "数据与配置") == {"AI分析任务", "每日数据批次", "规则配置"}
         assert "我的工作台" not in menu_titles
 
     def test_staff_current_info_uses_staff_menu_when_staff_exists(self, test_client: TestClient) -> None:
@@ -69,8 +83,12 @@ class TestCurrentUser:
 
         menu_titles = _flatten_menu_titles(body.get("menus") or [])
         assert "我的工作台" in menu_titles
-        assert "我的意向客户" in menu_titles
-        assert "客服账号" not in menu_titles
+        assert "客户跟进" in menu_titles
+        assert "会话复盘" in menu_titles
+        assert "个人账号" in menu_titles
+        assert _child_titles(body.get("menus") or [], "SmartQA") == {"我的工作台", "客户跟进", "会话复盘", "个人账号"}
+        assert "客服管理" not in menu_titles
+        assert "我的改进建议" not in menu_titles
 
     def test_password_update_route_exists(self, test_client: TestClient, auth_headers: dict) -> None:
         response = test_client.put(
@@ -143,3 +161,18 @@ def _flatten_menu_titles(items: list[dict]) -> set[str]:
             titles.add(title)
         stack.extend(item.get("children") or [])
     return titles
+
+
+def _child_titles(items: list[dict], title: str) -> set[str]:
+    for item in items:
+        current_title = item.get("title") or item.get("name")
+        if current_title == title:
+            return {
+                child_title
+                for child in item.get("children") or []
+                if (child_title := child.get("title") or child.get("name"))
+            }
+        nested = _child_titles(item.get("children") or [], title)
+        if nested:
+            return nested
+    return set()

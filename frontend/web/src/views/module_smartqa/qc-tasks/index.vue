@@ -1,6 +1,24 @@
 <template>
-  <div class="smartqa-page">
-    <div class="smartqa-toolbar">
+  <div class="smartqa-screen smartqa-page">
+    <section class="page-head">
+      <div>
+        <h2>AI分析任务</h2>
+        <p>创建、抽样并执行每日会话质检任务，结果直接写入 SmartQA 真实质检表。</p>
+      </div>
+      <div class="head-actions">
+        <ElButton :loading="loading" icon="Refresh" @click="loadData">刷新</ElButton>
+      </div>
+    </section>
+
+    <section class="summary-grid">
+      <article v-for="item in taskMetrics" :key="item.label" class="summary-card">
+        <span>{{ item.label }}</span>
+        <strong>{{ item.value }}</strong>
+        <em>{{ item.hint }}</em>
+      </article>
+    </section>
+
+    <section class="panel smartqa-toolbar">
       <ElInput v-model="conversationIds" placeholder="会话主键ID，逗号分隔" class="ids-input" />
       <ElInput v-model="ruleVersion" placeholder="规则版本" class="version-input" />
       <ElButton :loading="creating" type="primary" icon="Plus" @click="createTasks">创建任务</ElButton>
@@ -12,19 +30,16 @@
       <ElButton :loading="samplingExecuting" type="danger" icon="Connection" @click="createDailySample(true)">
         抽检并执行
       </ElButton>
-      <ElButton :loading="loading" icon="Refresh" @click="loadData">刷新</ElButton>
-    </div>
+    </section>
 
-    <ElRow v-if="sampleResult" :gutter="12">
-      <ElCol v-for="item in sampleMetrics" :key="item.label" :xs="12" :sm="8" :lg="4">
-        <ElCard shadow="never" class="metric-card">
-          <div class="metric-label">{{ item.label }}</div>
-          <div class="metric-value">{{ item.value }}</div>
-        </ElCard>
-      </ElCol>
-    </ElRow>
+    <section v-if="sampleResult" class="metric-grid">
+      <article v-for="item in sampleMetrics" :key="item.label" class="metric-card">
+        <span class="metric-label">{{ item.label }}</span>
+        <strong class="metric-value">{{ item.value }}</strong>
+      </article>
+    </section>
 
-    <ElCard shadow="never">
+    <section class="panel">
       <ElTable :loading="loading" :data="tasks" row-key="id" height="640" @selection-change="selected = $event">
         <ElTableColumn type="selection" width="48" />
         <ElTableColumn prop="id" label="ID" width="80" />
@@ -40,7 +55,7 @@
         <ElTableColumn prop="error_message" label="错误" min-width="220" show-overflow-tooltip />
         <ElTableColumn prop="created_time" label="创建时间" min-width="170" show-overflow-tooltip />
       </ElTable>
-    </ElCard>
+    </section>
   </div>
 </template>
 
@@ -68,6 +83,13 @@ const sampleMetrics = computed(() => [
   { label: "已存在", value: sampleResult.value?.create_result.skipped ?? 0 },
   { label: "执行成功", value: sampleResult.value?.execute_result?.success ?? "-" },
   { label: "执行失败", value: sampleResult.value?.execute_result?.failed ?? "-" },
+]);
+
+const taskMetrics = computed(() => [
+  { label: "任务总数", value: tasks.value.length, hint: "当前列表" },
+  { label: "待执行", value: tasks.value.filter((task) => task.status === "pending").length, hint: "可选中执行" },
+  { label: "执行成功", value: tasks.value.filter((task) => task.status === "success").length, hint: "已生成质检结果" },
+  { label: "执行失败", value: tasks.value.filter((task) => task.status === "failed").length, hint: "需查看错误" },
 ]);
 
 function statusType(status: string) {
@@ -149,14 +171,6 @@ onMounted(loadData);
 </script>
 
 <style scoped>
-.smartqa-page {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  height: 100%;
-  padding: 12px;
-}
-
 .smartqa-toolbar {
   display: flex;
   align-items: center;

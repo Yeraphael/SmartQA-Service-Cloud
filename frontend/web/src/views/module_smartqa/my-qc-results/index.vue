@@ -1,25 +1,40 @@
 <template>
-  <div class="smartqa-page">
-    <div class="smartqa-toolbar">
-      <ElInput
-        v-model="keyword"
-        clearable
-        placeholder="客户、商品"
-        prefix-icon="Search"
-        class="search-input"
-        @keyup.enter="search"
-      />
-      <ElSelect v-model="riskLevel" clearable placeholder="风险" class="risk-select" @change="search">
-        <ElOption label="无" value="none" />
-        <ElOption label="低" value="low" />
-        <ElOption label="中" value="medium" />
-        <ElOption label="高" value="high" />
-        <ElOption label="严重" value="critical" />
-      </ElSelect>
-      <ElButton :loading="loading" icon="Refresh" @click="loadData">刷新</ElButton>
-    </div>
+  <div class="smartqa-screen smartqa-page">
+    <section class="page-head">
+      <div>
+        <h2>会话复盘</h2>
+        <p>查看本人会话质检结果、问题证据和下一次可改进的话术。</p>
+      </div>
+      <div class="head-actions">
+        <ElInput
+          v-model="keyword"
+          clearable
+          placeholder="客户、商品"
+          prefix-icon="Search"
+          class="search-input"
+          @keyup.enter="search"
+        />
+        <ElSelect v-model="riskLevel" clearable placeholder="风险" class="risk-select" @change="search">
+          <ElOption label="无" value="none" />
+          <ElOption label="低" value="low" />
+          <ElOption label="中" value="medium" />
+          <ElOption label="高" value="high" />
+          <ElOption label="严重" value="critical" />
+        </ElSelect>
+        <ElButton :loading="loading" type="primary" icon="Search" @click="search">查询</ElButton>
+        <ElButton icon="RefreshLeft" @click="resetFilters">重置</ElButton>
+      </div>
+    </section>
 
-    <ElCard shadow="never">
+    <section class="summary-grid">
+      <article v-for="item in summaryCards" :key="item.label" class="summary-card">
+        <span>{{ item.label }}</span>
+        <strong>{{ item.value }}</strong>
+        <em>{{ item.hint }}</em>
+      </article>
+    </section>
+
+    <section class="panel">
       <ElTable :loading="loading" :data="rows" row-key="id" height="620" @row-dblclick="openDetail">
         <ElTableColumn prop="conversation_id" label="会话" min-width="150" show-overflow-tooltip />
         <ElTableColumn prop="score" label="分数" width="90" />
@@ -49,9 +64,9 @@
           @change="loadData"
         />
       </div>
-    </ElCard>
+    </section>
 
-    <ElDrawer v-model="drawerVisible" size="720px" title="质检详情">
+    <ElDrawer v-model="drawerVisible" size="720px" title="会话复盘详情">
       <div v-if="detail" class="detail">
         <ElDescriptions :column="2" border>
           <ElDescriptionsItem label="分数">{{ detail.result.score }}</ElDescriptionsItem>
@@ -80,7 +95,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import SmartQAAPI, { type QcResultDetail, type QcResultRow } from "@/api/module_smartqa";
 
 const loading = ref(false);
@@ -92,6 +107,13 @@ const keyword = ref("");
 const riskLevel = ref("");
 const drawerVisible = ref(false);
 const detail = ref<QcResultDetail>();
+
+const summaryCards = computed(() => [
+  { label: "我的结果", value: rows.value.length, hint: `共 ${total.value} 条` },
+  { label: "通过", value: rows.value.filter((row) => row.result_level === "pass").length, hint: "当前页" },
+  { label: "待改进", value: rows.value.filter((row) => row.result_level !== "pass").length, hint: "当前页" },
+  { label: "高风险", value: rows.value.filter((row) => ["high", "critical"].includes(row.risk_level)).length, hint: "当前页" },
+]);
 
 async function loadData() {
   loading.value = true;
@@ -114,6 +136,12 @@ function search() {
   loadData();
 }
 
+function resetFilters() {
+  keyword.value = "";
+  riskLevel.value = "";
+  search();
+}
+
 async function openDetail(row: QcResultRow) {
   const res = await SmartQAAPI.qcResultDetail(row.id);
   detail.value = res.data.data;
@@ -124,14 +152,6 @@ onMounted(loadData);
 </script>
 
 <style scoped>
-.smartqa-page {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  height: 100%;
-  padding: 12px;
-}
-
 .smartqa-toolbar {
   display: flex;
   align-items: center;

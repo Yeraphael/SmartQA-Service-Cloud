@@ -14,7 +14,7 @@
     </div>
 
     <div class="left-img">
-      <FaThemeSvg :src="loginIcon" size="100%" />
+      <img :src="brandImage" alt="SmartQA Service Cloud" />
     </div>
 
     <div class="text-wrap">
@@ -89,7 +89,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import AppConfig from "@/config";
-import loginIcon from "@fa_imgs/background.svg";
+import brandImage from "@fa_imgs/smartqa-brand.png";
 import { useConfigStore } from "@stores";
 import { themeAnimation } from "@utils";
 
@@ -117,7 +117,7 @@ const siteTitle = computed(
   () => configStore.configData.tenant_name?.config_value?.trim() || AppConfig.systemInfo.name
 );
 
-const DEFAULT_APP_VERSION = "3.0.0";
+const DEFAULT_APP_VERSION = "1.1.0";
 const displayVersion = computed(() => {
   const raw = configStore.configData.tenant_version?.config_value?.trim();
   const ver = raw || DEFAULT_APP_VERSION;
@@ -208,9 +208,20 @@ $bg-mix-light-7: color-mix(in srgb, $primary-light-7 80%, $main-bg);
     position: absolute;
     inset: 0 0 10.5%;
     z-index: 10;
-    width: 40%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: min(68%, 760px);
     margin: auto;
     animation: slideInLeft 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+
+    img {
+      display: block;
+      width: 100%;
+      height: auto;
+      object-fit: contain;
+      filter: drop-shadow(0 18px 32px rgb(31 82 158 / 8%));
+    }
   }
 
   .text-wrap {

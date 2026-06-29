@@ -1,14 +1,28 @@
 <template>
-  <div class="smartqa-page">
-    <div class="smartqa-toolbar">
-      <ElSwitch v-model="boundOnly" active-text="仅已绑定" @change="loadData" />
-      <ElButton :loading="seeding" type="primary" icon="UserFilled" @click="seedUsers">
-        初始化客服账号
-      </ElButton>
-      <ElButton :loading="loading" icon="Refresh" @click="loadData">刷新</ElButton>
-    </div>
+  <div class="smartqa-screen smartqa-page">
+    <section class="page-head">
+      <div>
+        <h2>客服管理</h2>
+        <p>管理千牛客服与系统登录账号绑定、启停和密码重置。</p>
+      </div>
+      <div class="head-actions">
+        <ElSwitch v-model="boundOnly" active-text="仅已绑定" @change="loadData" />
+        <ElButton :loading="seeding" type="primary" icon="UserFilled" @click="seedUsers">
+          初始化客服账号
+        </ElButton>
+        <ElButton :loading="loading" icon="Refresh" @click="loadData">刷新</ElButton>
+      </div>
+    </section>
 
-    <ElCard shadow="never">
+    <section class="summary-grid">
+      <article v-for="item in metrics" :key="item.label" class="summary-card">
+        <span>{{ item.label }}</span>
+        <strong>{{ item.value }}</strong>
+        <em>{{ item.hint }}</em>
+      </article>
+    </section>
+
+    <section class="panel">
       <ElTable :loading="loading" :data="rows" row-key="staff_id" height="650">
         <ElTableColumn prop="staff_id" label="ID" width="80" />
         <ElTableColumn prop="staff_name" label="客服" width="120" show-overflow-tooltip />
@@ -36,19 +50,26 @@
           </template>
         </ElTableColumn>
       </ElTable>
-    </ElCard>
+    </section>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ElMessage, ElMessageBox } from "element-plus";
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import SmartQAAPI, { type StaffUser } from "@/api/module_smartqa";
 
 const loading = ref(false);
 const seeding = ref(false);
 const boundOnly = ref(false);
 const rows = ref<StaffUser[]>([]);
+
+const metrics = computed(() => [
+  { label: "客服数", value: rows.value.length, hint: boundOnly.value ? "已绑定筛选" : "当前列表" },
+  { label: "已绑定账号", value: rows.value.filter((row) => row.sys_user_id).length, hint: "可登录系统" },
+  { label: "启用账号", value: rows.value.filter((row) => row.sys_user_id && row.user_status === 0).length, hint: "当前可用" },
+  { label: "未绑定", value: rows.value.filter((row) => !row.sys_user_id).length, hint: "需创建账号" },
+]);
 
 async function loadData() {
   loading.value = true;
@@ -92,14 +113,6 @@ onMounted(loadData);
 </script>
 
 <style scoped>
-.smartqa-page {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  height: 100%;
-  padding: 12px;
-}
-
 .smartqa-toolbar {
   display: flex;
   align-items: center;

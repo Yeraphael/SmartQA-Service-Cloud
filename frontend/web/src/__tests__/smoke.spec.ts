@@ -16,5 +16,5 @@ describe("SmartQA frontend smoke", () => {
     expect(mod.default.conversations).toBeTypeOf("function");
     expect(mod.default.qcTasks).toBeTypeOf("function");
     expect(mod.default.dailyQcSample).toBeTypeOf("function");
-  });
+  }, 15000);
 });

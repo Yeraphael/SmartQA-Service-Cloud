@@ -1,9 +1,9 @@
 <template>
-  <div class="my-dashboard">
+  <div class="smartqa-screen my-dashboard">
     <div class="page-head">
       <div>
         <h2>我的工作台</h2>
-        <p>先处理高意向、未留资、已留资未承接和高风险复盘</p>
+        <p>先处理高意向客户、待联系确认、待交接确认和高风险复盘</p>
       </div>
       <ElButton :loading="loading" icon="Refresh" @click="loadData">刷新</ElButton>
     </div>
@@ -87,14 +87,14 @@ const replyRows = computed(() => (summary.value?.suggested_replies || []).slice(
 
 const metrics = computed(() => [
   { label: "H1/H2客户", value: hRows.value.length, icon: "ri:user-star-line" },
-  { label: "待留资", value: hRows.value.filter((row) => !row.contact_requested).length, icon: "ri:phone-line" },
-  { label: "待承接", value: hRows.value.filter((row) => row.contact_provided && !["ready", "matched", "converted"].includes(row.xianfa_handoff_status)).length, icon: "ri:exchange-line" },
+  { label: "待联系确认", value: hRows.value.filter((row) => !row.contact_requested).length, icon: "ri:phone-line" },
+  { label: "待交接确认", value: hRows.value.filter((row) => row.contact_provided && !["ready", "matched", "converted"].includes(row.xianfa_handoff_status)).length, icon: "ri:exchange-line" },
   { label: "待激活", value: hRows.value.filter((row) => (row.silent_hours ?? 0) >= 24).length, icon: "ri:timer-line" },
 ]);
 
 function todoTag(row: IntentCustomer): { type: "danger" | "warning" | "success" | "info"; text: string } {
-  if (!row.contact_requested) return { type: "danger", text: "待留资" };
-  if (row.contact_provided && !["ready", "matched", "converted"].includes(row.xianfa_handoff_status)) return { type: "warning", text: "待承接" };
+  if (!row.contact_requested) return { type: "danger", text: "待联系确认" };
+  if (row.contact_provided && !["ready", "matched", "converted"].includes(row.xianfa_handoff_status)) return { type: "warning", text: "待交接确认" };
   if ((row.silent_hours ?? 0) >= 24) return { type: "info", text: "待激活" };
   return { type: "success", text: "继续推进" };
 }
@@ -118,12 +118,6 @@ onMounted(loadData);
 
 <style scoped>
 .my-dashboard {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  min-height: 100%;
-  padding: 14px;
-  background: var(--el-bg-color-page);
 }
 
 .page-head {

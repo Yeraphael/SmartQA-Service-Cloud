@@ -1,9 +1,9 @@
 <template>
-  <div class="intent-page">
+  <div class="smartqa-screen intent-page">
     <div class="page-head">
       <div>
-        <h2>我的意向客户</h2>
-        <p>按优先级处理客户，看到原因、缺什么、下一步怎么说</p>
+        <h2>客户跟进</h2>
+        <p>按优先级处理本人客户，看到原因、缺口、下一步动作和建议话术</p>
       </div>
       <div class="actions">
         <ElInput
@@ -45,7 +45,7 @@
       <ElTableColumn label="缺失信息" min-width="170" show-overflow-tooltip>
         <template #default="{ row }">{{ (row.missing_infos || []).join("、") || "暂未识别" }}</template>
       </ElTableColumn>
-      <ElTableColumn label="留资承接" width="116">
+      <ElTableColumn label="跟进状态" width="132">
         <template #default="{ row }">
           <ElTag :type="contactTag(row).type" effect="plain">{{ contactTag(row).text }}</ElTag>
         </template>
@@ -59,7 +59,7 @@
       </ElTableColumn>
     </ElTable>
 
-    <ElDrawer v-model="drawerVisible" size="760px" title="客户跟进详情">
+    <ElDrawer v-model="drawerVisible" size="760px" title="客户跟进证据">
       <div v-if="selected" class="drawer-body">
         <section class="intent-card">
           <div class="intent-card-head">
@@ -71,7 +71,7 @@
           </div>
           <ElDescriptions :column="2" border>
             <ElDescriptionsItem label="阶段">{{ selected.lifecycle_stage || "-" }}</ElDescriptionsItem>
-            <ElDescriptionsItem label="留资状态">{{ contactTag(selected).text }}</ElDescriptionsItem>
+            <ElDescriptionsItem label="跟进状态">{{ contactTag(selected).text }}</ElDescriptionsItem>
             <ElDescriptionsItem label="证据数">{{ selected.evidence_count || 0 }}</ElDescriptionsItem>
             <ElDescriptionsItem label="沉默时长">{{ selected.silent_hours ?? "-" }} 小时</ElDescriptionsItem>
           </ElDescriptions>
@@ -131,8 +131,8 @@ const summary = computed(() => {
   return [
     { label: "我的客户", value: rows.value.length },
     { label: "H1/H2", value: hRows.length },
-    { label: "未留资", value: hRows.filter((row) => !row.contact_requested).length },
-    { label: "已留资待承接", value: hRows.filter((row) => row.contact_provided && !["ready", "matched", "converted"].includes(row.xianfa_handoff_status)).length },
+    { label: "待联系确认", value: hRows.filter((row) => !row.contact_requested).length },
+    { label: "待交接确认", value: hRows.filter((row) => row.contact_provided && !["ready", "matched", "converted"].includes(row.xianfa_handoff_status)).length },
   ];
 });
 
@@ -144,10 +144,10 @@ function tierTag(value: string): "danger" | "warning" | "success" | "info" {
 }
 
 function contactTag(row: IntentCustomer): { type: "success" | "warning" | "danger" | "info"; text: string } {
-  if (["ready", "matched", "converted"].includes(row.xianfa_handoff_status)) return { type: "success", text: "已承接" };
-  if (row.contact_provided) return { type: "warning", text: "已留资" };
-  if (row.contact_requested) return { type: "info", text: "已询问" };
-  if (["H1", "H2"].includes(row.intent_tier)) return { type: "danger", text: "未留资" };
+  if (["ready", "matched", "converted"].includes(row.xianfa_handoff_status)) return { type: "success", text: "已交接" };
+  if (row.contact_provided) return { type: "warning", text: "已留联系方式" };
+  if (row.contact_requested) return { type: "info", text: "已询问联系方式" };
+  if (["H1", "H2"].includes(row.intent_tier)) return { type: "danger", text: "待联系确认" };
   return { type: "info", text: "未涉及" };
 }
 
@@ -178,12 +178,6 @@ onMounted(loadData);
 
 <style scoped>
 .intent-page {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  min-height: 100%;
-  padding: 14px;
-  background: var(--el-bg-color-page);
 }
 
 .page-head {
