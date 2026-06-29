@@ -1,2 +1,0 @@
-"""SmartQA shared helpers."""
-

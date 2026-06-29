@@ -1,2 +1,0 @@
-"""Qianniu data source endpoints."""
-

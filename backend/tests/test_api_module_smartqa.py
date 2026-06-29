@@ -1,4 +1,4 @@
-"""SmartQA product API integration smoke tests."""
+﻿"""SmartQA product API integration smoke tests."""
 
 from unittest.mock import patch
 
@@ -90,7 +90,7 @@ class TestSmartQABossApis:
             },
         }
         with patch(
-            "app.plugin.module_smartqa.pipeline.SmartQAPipeline.run_daily_qc_sample",
+            "app.smartqa.pipeline.SmartQAPipeline.run_daily_qc_sample",
             return_value=sample_result,
         ) as daily_sample:
             data = _assert_success_response(

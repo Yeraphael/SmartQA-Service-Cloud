@@ -1,0 +1,33 @@
+﻿"""Sync source database (aizhijian) into SmartQA ODS/DWD."""
+
+import asyncio
+
+from app.core.base_schema import AuthSchema
+from app.smartqa.pipeline import SmartQAPipeline, get_source_config
+
+
+class SourceDbSyncService:
+    """Source database sync service used by HTTP APIs and scripts."""
+
+    def __init__(self, source_config: dict | None = None, auth: AuthSchema | None = None):
+        self.source_config = source_config or get_source_config()
+        self.auth = auth
+
+    async def full_sync(self, session=None, build: bool = True, seed: bool = True, truncate_dwd: bool = False) -> dict:
+        pipeline = SmartQAPipeline(
+            source_config=self.source_config,
+            tenant_id=self.auth.tenant_id if self.auth else 1,
+            created_id=self.auth.user.id if self.auth and self.auth.user else None,
+        )
+        return await asyncio.to_thread(self._run_full_sync, pipeline, build, seed, truncate_dwd)
+
+    @staticmethod
+    def _run_full_sync(pipeline: SmartQAPipeline, build: bool, seed: bool, truncate_dwd: bool) -> dict:
+        sync_result = pipeline.full_sync()
+        build_result = pipeline.rebuild_warehouse(sync_result["batch_id"], truncate_dwd=truncate_dwd) if build else {}
+        seed_result = pipeline.seed_defaults() if seed else {}
+        return {
+            **sync_result,
+            "build_result": build_result,
+            "seed_result": seed_result,
+        }

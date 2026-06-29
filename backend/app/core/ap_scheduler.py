@@ -1,4 +1,4 @@
-"""SmartQA product scheduler."""
+﻿"""SmartQA product scheduler."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ from redis.asyncio.client import Redis
 
 from app.config.setting import settings
 from app.core.logger import logger
-from app.plugin.module_smartqa.pipeline import SmartQAPipeline
+from app.smartqa.pipeline import SmartQAPipeline
 
 
 class SchedulerUtil:

@@ -9,7 +9,7 @@ backend/
 ├── app/api/v1/module_system/       # 登录、当前用户、字典、参数等最小基础接口
 ├── app/api/v1/module_platform/     # 动态菜单模型，仅作为权限底座
 ├── app/core/                       # 配置、权限、数据库、启动流程
-├── app/plugin/module_smartqa/      # SmartQA 业务模块
+├── app/smartqa/                    # SmartQA 业务系统
 ├── app/scripts/data/               # SmartQA 最小种子数据
 ├── scripts/smartqa_pipeline.py     # 真实数据同步、扩表、质检任务、模型执行
 └── main.py

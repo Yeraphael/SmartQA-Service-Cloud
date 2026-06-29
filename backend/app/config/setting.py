@@ -202,7 +202,6 @@ class Settings(BaseSettings):
     SMARTQA_DAILY_QC_SAMPLE_LIMIT: int = 100
     SMARTQA_DAILY_QC_EXECUTE: bool = True
     SMARTQA_SCHEDULER_TIMEZONE: str = "Asia/Shanghai"
-    PLUGIN_MODULE_ALLOWLIST: list[str] = ["module_smartqa"]
     SCHEDULER_ENABLE: bool = True
 
     # ================================================= #

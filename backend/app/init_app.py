@@ -119,16 +119,14 @@ def register_routers(app: FastAPI) -> None:
     from app.api.v1.module_common import common_router
     from app.api.v1.module_platform import platform_router
     from app.api.v1.module_system import system_router
+    from app.smartqa import smartqa_router
 
     http_limiter = [Depends(RateLimiter(times=200, seconds=10))] if settings.REDIS_ENABLE else []
 
     app.include_router(common_router, dependencies=http_limiter)
     app.include_router(platform_router, dependencies=http_limiter)
     app.include_router(system_router, dependencies=http_limiter)
-
-    from app.core.discover import get_dynamic_router, set_app_ref
-    app.include_router(router=get_dynamic_router(), dependencies=http_limiter)
-    set_app_ref(app)
+    app.include_router(smartqa_router, dependencies=http_limiter)
 
 def register_files(app: FastAPI) -> None:
     if settings.STATIC_ENABLE:

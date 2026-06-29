@@ -1,4 +1,4 @@
-"""SmartQA real-data operations.
+﻿"""SmartQA real-data operations.
 
 Examples:
   python scripts/smartqa_pipeline.py counts
@@ -23,7 +23,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 os.environ.setdefault("ENVIRONMENT", "dev")
 
-from app.plugin.module_smartqa.pipeline import SmartQAPipeline, load_env_file
+from app.smartqa.pipeline import SmartQAPipeline, load_env_file
 
 
 def print_json(data: object) -> None:

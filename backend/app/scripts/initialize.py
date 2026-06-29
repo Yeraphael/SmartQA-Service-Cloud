@@ -1,4 +1,4 @@
-import asyncio
+﻿import asyncio
 import json
 import re
 from datetime import datetime, time
@@ -15,12 +15,12 @@ from app.api.v1.module_system.user.model import UserModel, UserRolesModel
 from app.config.path_conf import SCRIPT_DIR
 from app.core.database import async_db_session, create_tables
 from app.core.logger import logger
-from app.plugin.module_smartqa.models.conversation import (
+from app.smartqa.models.conversation import (
     DwdCustomerStaffRelationModel,
     DwdQnConversationModel,
     DwdQnMessageModel,
 )
-from app.plugin.module_smartqa.models.dimension import (
+from app.smartqa.models.dimension import (
     DimCustomerIdentityModel,
     DimCustomerModel,
     DimProductModel,
@@ -28,12 +28,12 @@ from app.plugin.module_smartqa.models.dimension import (
     DimStaffAccountModel,
     DimStaffModel,
 )
-from app.plugin.module_smartqa.models.ods import (
+from app.smartqa.models.ods import (
     OdsImportBatchModel,
     OdsQnChatRecordModel,
     OdsQnShopRecordModel,
 )
-from app.plugin.module_smartqa.models.qc import (
+from app.smartqa.models.qc import (
     ModelCallLogModel,
     QcIssueEvidenceModel,
     QcIssueModel,
@@ -187,7 +187,7 @@ class InitializeData:
             return []
 
         try:
-            with open(json_path, encoding="utf-8") as f:
+            with open(json_path, encoding="utf-8-sig") as f:
                 raw = json.loads(f.read())
             return [self._parse_date_strings(item) for item in raw]
         except json.JSONDecodeError as exc:

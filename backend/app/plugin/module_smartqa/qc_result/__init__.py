@@ -1,2 +1,0 @@
-"""QC result query endpoints."""
-

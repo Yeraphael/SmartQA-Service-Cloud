@@ -1,7 +1,7 @@
 # SmartQA 数据库字段使用审计表
 
 > 目的：逐表标记字段是否真正使用、含义是什么、是否冗余，供后续删字段、改表、做增量同步和 BI 宽表时决策。
-> 范围：本表审计 `backend/app/plugin/module_smartqa/models` 下的 SmartQA 业务表，不包含系统用户、角色、菜单、租户等平台基础表。
+> 范围：本表审计 `backend/app/smartqa/models` 下的 SmartQA 业务表，不包含系统用户、角色、菜单、租户等平台基础表。
 > 依据：SQLAlchemy 模型、`pipeline.py` 同步/构建 SQL、后端 service 查询、前端 SmartQA API 类型、`docs/SmartQA客服质检与客户意向BI开发规则.md`。
 
 ## 标记说明

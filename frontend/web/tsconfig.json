@@ -19,27 +19,10 @@
     "skipLibCheck": true,
     "paths": {
       "@/*": ["./src/*"],
-      "@views/*": ["./src/views/*"],
-      "@imgs": ["./src/assets/images"],
-      "@icons": ["./src/assets/images/svg"],
-      "@utils": ["./src/utils"],
-      "@utils/*": ["./src/utils/*"],
-      "@stores": ["./src/store"],
-      "@stores/*": ["./src/store/*"],
-      "@plugins": ["./src/plugins"],
-      "@styles": ["./src/styles"],
-      "@api/*": ["./src/api/*"],
       "@fa_imgs/*": ["./src/assets/fa_imgs/*"],
       "@fa_imgs": ["./src/assets/fa_imgs"]
     }
   },
-  "include": [
-    "src/**/*.ts",
-    "src/**/*.d.ts",
-    "src/types/import/*.d.ts",
-    "src/**/*.tsx",
-    "src/**/*.vue",
-    "build/vitePluginStart.ts"
-  ],
+  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.vue"],
   "exclude": ["node_modules", "dist"]
 }

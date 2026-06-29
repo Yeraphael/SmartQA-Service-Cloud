@@ -1,4 +1,4 @@
-"""
+﻿"""
 SmartQA system API smoke tests.
 
 These tests intentionally cover only the retained P0 system surface: login,
@@ -125,7 +125,7 @@ def _ensure_test_staff_dimension() -> int:
     from sqlalchemy import select
 
     from app.core.database import async_db_session
-    from app.plugin.module_smartqa.models.dimension import DimStaffModel
+    from app.smartqa.models.dimension import DimStaffModel
 
     async def _inner() -> int:
         async with async_db_session() as db:

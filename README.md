@@ -8,17 +8,17 @@
 - 扩建业务库：`smartqa`
 - 初始老板账号：`boss/SmartQA@123456`
 - AI 模型：阿里百炼 `qwen3.7-plus`
-- 后端运行时仅启用 SmartQA 业务插件，原框架参考业务、任务、内置 AI 聊天等非 P0 模块不进入业务菜单和业务路由。
+- 后端运行时显式挂载 SmartQA 业务系统，原框架参考业务、任务、内置 AI 聊天等非 P0 模块不进入业务菜单和业务路由。
 
 敏感信息不要提交到 GitHub。数据库、阿里模型等账号密钥放在本地 `docs/` 或环境变量中，部署时按宝塔服务器实际配置填写。
 
 ## 代码位置
 
-- 后端业务模块：`backend/app/plugin/module_smartqa/`
-- 数据同步与质检流水线：`backend/app/plugin/module_smartqa/pipeline.py`
+- 后端业务系统：`backend/app/smartqa/`
+- 数据同步与质检流水线：`backend/app/smartqa/pipeline.py`
 - 命令行流水线脚本：`backend/scripts/smartqa_pipeline.py`
-- 前端页面：`frontend/web/src/views/module_smartqa/`
-- 前端 API：`frontend/web/src/api/module_smartqa/`
+- 前端产品入口：`frontend/web/src/smartqa/`
+- 前端 API：`frontend/web/src/smartqa/api.ts`
 - 核心设计文档：`docs/项目系统设计精炼文档.md`
 - 启动使用文档：`docs/项目启动使用文档.md`
 

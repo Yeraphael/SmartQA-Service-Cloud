@@ -1,0 +1,1 @@
+"""SmartQA health endpoints."""
