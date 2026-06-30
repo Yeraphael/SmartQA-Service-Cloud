@@ -92,7 +92,6 @@ SMARTQA_REQUIRED_PARAMS: dict[str, dict[str, Any]] = {
             [
                 "/api/v1/system/auth/login",
                 "/api/v1/system/auth/token/refresh",
-                "/api/v1/system/auth/captcha/get",
                 "/api/v1/system/auth/logout",
                 "/api/v1/system/config/info",
                 "/common/health",

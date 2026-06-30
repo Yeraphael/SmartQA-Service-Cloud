@@ -620,6 +620,7 @@ class DashboardService:
                 DimStaffModel.id.label("staff_id"),
                 DimStaffModel.staff_name,
                 DimStaffModel.primary_account,
+                DimShopModel.shop_name,
                 DimProductModel.product_id,
                 DimProductModel.product_name,
             )
@@ -627,6 +628,7 @@ class DashboardService:
             .join(QcTaskModel, QcResultModel.task_id == QcTaskModel.id)
             .join(DwdQnConversationModel, QcResultModel.conversation_id == DwdQnConversationModel.id)
             .outerjoin(DimStaffModel, DwdQnConversationModel.staff_id == DimStaffModel.id)
+            .outerjoin(DimShopModel, DwdQnConversationModel.shop_id == DimShopModel.id)
             .outerjoin(DimProductModel, DwdQnConversationModel.product_id == DimProductModel.id)
             .where(
                 QcResultModel.is_deleted == False,  # noqa: E712
@@ -744,6 +746,7 @@ class DashboardService:
                     "dimension_sum": defaultdict(float),
                     "dimension_count": defaultdict(int),
                     "trend_bucket": defaultdict(list),
+                    "shop_names": Counter(),
                 },
             )
             score = float(row.get("score") or 0)
@@ -752,6 +755,8 @@ class DashboardService:
             item["score_sum"] += score
             if row.get("risk_level") in {"high", "critical"}:
                 item["high_risk_count"] += 1
+            if row.get("shop_name"):
+                item["shop_names"][row["shop_name"]] += 1
 
             dimension_scores = self._extract_dimension_scores(row, result_issue_map.get(int(row.get("result_pk") or 0), []), score)
             for key, value in dimension_scores.items():
@@ -780,12 +785,15 @@ class DashboardService:
 
             trend = self._staff_trend(item["trend_bucket"])
             main_issue = staff_issue_titles.get(staff_id, Counter()).most_common(1)
+            top_shop = item["shop_names"].most_common(1)
             staff_items.append(
                 {
                     "staff_id": staff_id,
                     "staff_name": item["staff_name"],
                     "primary_account": item["primary_account"],
                     "role_label": "客服专员",
+                    "shop_name": top_shop[0][0] if top_shop else None,
+                    "group_name": None,
                     "qc_count": qc_count,
                     "conversation_count": item["conversation_count"],
                     "overall_score": overall_score,

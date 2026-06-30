@@ -47,3 +47,7 @@ class StaffUserListSchema(BaseModel):
     username: str | None
     nickname: str | None
     user_status: int | None
+    shop_name: str | None = None
+    group_name: str | None = None
+    conversation_count: int = 0
+    last_login: str | None = None

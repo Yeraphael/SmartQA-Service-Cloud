@@ -59,12 +59,10 @@ export const Auth = {
 };
 
 export const SmartQAService = {
-  async login(username: string, password: string, rememberMe: boolean, captchaKey?: string, captcha?: string) {
+  async login(username: string, password: string, rememberMe: boolean) {
     const form = new URLSearchParams();
     form.append("username", username);
     form.append("password", password);
-    form.append("captcha_key", captchaKey || "");
-    form.append("captcha", captcha || "");
     form.append("login_type", "PC");
     form.append("grant_type", "password");
     const response = await api.post<ApiResponse<LoginPayload>>("/system/auth/login", form, {
@@ -73,9 +71,6 @@ export const SmartQAService = {
     const data = unwrap(response.data);
     Auth.setTokens(data.access_token, data.refresh_token, rememberMe);
     return data;
-  },
-  captcha() {
-    return get<CaptchaPayload>("/system/auth/captcha/get");
   },
   async logout() {
     const token = Auth.getAccessToken();
@@ -90,6 +85,15 @@ export const SmartQAService = {
   bossWorkbench() {
     return get<BossWorkbench>("/smartqa/dashboard/boss-workbench");
   },
+  staffPerformance(params: { staff_id?: number; limit?: number } = { limit: 100 }) {
+    return get<StaffPerformanceRow[]>("/smartqa/dashboard/staff-performance", params);
+  },
+  improvements(params: { staff_id?: number; limit?: number } = { limit: 20 }) {
+    return get<ImprovementPayload>("/smartqa/dashboard/improvements", params);
+  },
+  intentCustomers(params: { limit?: number; keyword?: string; tier?: string } = { limit: 80 }) {
+    return get<IntentCustomer[]>("/smartqa/dashboard/intent-customers", params);
+  },
   productOpportunities(limit = 20) {
     return get<ProductOpportunity[]>("/smartqa/dashboard/product-opportunities", { limit });
   },
@@ -101,6 +105,15 @@ export const SmartQAService = {
   },
   staffUsers(boundOnly = false) {
     return get<StaffUser[]>("/smartqa/staff-users", { bound_only: boundOnly });
+  },
+  ensureStaffUser(staffId: number, password: string) {
+    return post<Record<string, unknown>>(`/smartqa/staff-users/${staffId}/ensure`, { password });
+  },
+  resetStaffPassword(staffId: number, password: string) {
+    return put<Record<string, unknown>>(`/smartqa/staff-users/${staffId}/password`, { password });
+  },
+  setStaffUserStatus(staffId: number, status: "enabled" | "disabled") {
+    return patch<Record<string, unknown>>(`/smartqa/staff-users/${staffId}/status`, { status: status === "enabled" ? 0 : 1 });
   },
   batchSummary() {
     return get<QianniuSummary>("/smartqa/qianniu/summary");
@@ -126,6 +139,15 @@ export const SmartQAService = {
   rules(params?: { category?: string; status?: string }) {
     return get<QcRule[]>("/smartqa/qc/rules", params);
   },
+  promptTemplates(params?: { status?: string }) {
+    return get<QcPromptTemplate[]>("/smartqa/qc/rules/prompt-templates", params);
+  },
+  ruleVersions(params?: { status?: string }) {
+    return get<QcRuleVersion[]>("/smartqa/qc/rules/versions", params);
+  },
+  changePassword(oldPassword: string, newPassword: string) {
+    return put<UserInfo>("/system/user/password/change", { old_password: oldPassword, new_password: newPassword });
+  },
 };
 
 async function get<T>(url: string, params?: object): Promise<T> {
@@ -135,6 +157,16 @@ async function get<T>(url: string, params?: object): Promise<T> {
 
 async function post<T>(url: string, data?: unknown): Promise<T> {
   const response = await api.post<ApiResponse<T>>(url, data);
+  return unwrap(response.data);
+}
+
+async function put<T>(url: string, data?: unknown): Promise<T> {
+  const response = await api.put<ApiResponse<T>>(url, data);
+  return unwrap(response.data);
+}
+
+async function patch<T>(url: string, data?: unknown): Promise<T> {
+  const response = await api.patch<ApiResponse<T>>(url, data);
   return unwrap(response.data);
 }
 
@@ -161,12 +193,6 @@ export interface ApiResponse<T> {
   success: boolean;
 }
 
-export interface CaptchaPayload {
-  enable: boolean;
-  key: string;
-  img_base: string;
-}
-
 export interface LoginPayload {
   access_token: string;
   refresh_token: string;
@@ -182,6 +208,11 @@ export interface UserInfo {
   nickname?: string;
   avatar?: string;
   is_superuser?: boolean;
+  last_login?: string;
+  phone?: string;
+  email?: string;
+  status?: number;
+  menus?: Array<Record<string, unknown>>;
   roles?: Array<{ id: number; code?: string; name?: string }>;
 }
 
@@ -230,6 +261,8 @@ export interface BossStaffQuality {
   staff_name: string;
   primary_account: string;
   role_label: string;
+  shop_name?: string;
+  group_name?: string;
   qc_count: number;
   conversation_count: number;
   overall_score: number;
@@ -273,6 +306,84 @@ export interface ProductOpportunity {
   bulk_count: number;
   price_sensitive_count: number;
   h_customer_rate: number;
+}
+
+export interface StaffPerformanceRow {
+  staff_id: number;
+  staff_name: string;
+  primary_account?: string;
+  conversation_count: number;
+  qc_count: number;
+  avg_score: number;
+  issue_count: number;
+  fail_count: number;
+  high_risk_count: number;
+  h_customer_count: number;
+  contact_request_rate: number;
+  contact_success_rate: number;
+}
+
+export interface ImprovementPayload {
+  issue_summary: Array<{ rule_code: string; severity: string; issue_count: number }>;
+  frequent_issues: Array<{
+    rule_code: string;
+    severity: string;
+    title: string;
+    reason?: string;
+    suggested_action?: string;
+    issue_count: number;
+  }>;
+  suggested_replies: Array<{ rule_code: string; title: string; suggested_reply: string; issue_count: number }>;
+  recent_high_risk: Array<{
+    result_id: number;
+    score: number;
+    risk_level: string;
+    summary?: string;
+    conversation_pk: number;
+    conversation_id: string;
+    start_time?: string;
+    product_name?: string;
+    customer_account?: string;
+  }>;
+}
+
+export interface IntentCustomer {
+  result_id: number;
+  conversation_pk: number;
+  conversation_id: string;
+  start_time?: string;
+  end_time?: string;
+  staff_id?: number;
+  staff_name?: string;
+  customer_id?: number;
+  customer_account?: string;
+  customer_alias_masked?: string;
+  shop_id?: number;
+  shop_name?: string;
+  product_pk?: number;
+  product_id?: string;
+  product_name?: string;
+  staff_quality_score: number;
+  risk_level?: string;
+  summary?: string;
+  intent_score: number;
+  intent_tier: string;
+  lifecycle_stage: string;
+  need_type: string;
+  need_summary: string;
+  intent_reason_text: string;
+  evidence_count: number;
+  missing_infos: string[];
+  tags: string[];
+  contact_requested: boolean;
+  contact_provided: boolean;
+  contact_type?: string;
+  xianfa_handoff_status: string;
+  next_action: string;
+  suggested_reply?: string;
+  quote_given: boolean;
+  silent_hours?: number;
+  risk_flags: string[];
 }
 
 export interface PageQuery {
@@ -336,10 +447,14 @@ export interface StaffUser {
   primary_account: string;
   source_system: string;
   status: string;
+  shop_name?: string;
+  group_name?: string;
+  conversation_count?: number;
   sys_user_id?: number;
   username?: string;
   nickname?: string;
   user_status?: number;
+  last_login?: string;
 }
 
 export interface QianniuSummary {
@@ -440,4 +555,26 @@ export interface QcRule {
   status: string;
   created_time: string;
   updated_time: string;
+}
+
+export interface QcPromptTemplate {
+  id: number;
+  prompt_version: string;
+  name: string;
+  template_content: string;
+  output_schema_version: string;
+  status: string;
+  created_time: string;
+  updated_time?: string;
+}
+
+export interface QcRuleVersion {
+  id: number;
+  rule_version: string;
+  prompt_version: string;
+  rule_codes?: string[];
+  rule_snapshot?: Record<string, unknown>;
+  status: string;
+  published_at?: string;
+  created_time: string;
 }

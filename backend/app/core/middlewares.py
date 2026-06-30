@@ -152,7 +152,7 @@ class CorrelationIdMiddleware(BaseHTTPMiddleware):
 
 _TENANT_WHITELIST_PREFIXES = ("/docs", "/redoc", "/openapi.json", "/metrics", "/static/")
 _WHITELIST_ALL = (
-    "/api/v1/system/auth/login", "/api/v1/system/auth/captcha",
+    "/api/v1/system/auth/login",
     "/api/v1/system/auth/refresh", "/api/v1/health", "/api/v1/common/health",
 ) + tuple(settings.TENANT_WHITELIST_PATHS)
 

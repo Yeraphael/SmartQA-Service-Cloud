@@ -31,10 +31,6 @@ class TestAuth:
         assert "tenants" not in data
         assert data["user_info"]["username"] == "boss"
 
-    def test_captcha_route_exists(self, test_client: TestClient) -> None:
-        response = test_client.get("/system/auth/captcha/get")
-        assert response.status_code != 404
-
     def test_refresh_and_logout_routes_exist(self, test_client: TestClient, auth_headers: dict) -> None:
         refresh = test_client.post("/system/auth/token/refresh", json={"refresh_token": "invalid"})
         assert refresh.status_code != 404

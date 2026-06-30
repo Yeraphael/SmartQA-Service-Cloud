@@ -1,15 +1,7 @@
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, Field
 
 from app.core.base_schema import JWTOutSchema
 from app.core.validator import DateTimeStr
-
-
-class CaptchaOutSchema(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    enable: bool = Field(default=True, description="是否启用验证码")
-    key: str = Field(..., min_length=1, description="验证码唯一标识")
-    img_base: str = Field(..., min_length=1, description="Base64 编码验证码图片")
 
 
 class LoginOutSchema(JWTOutSchema):

@@ -28,6 +28,7 @@ _TEST_DB_PATH = tempfile.NamedTemporaryFile(suffix=".db", delete=False).name
 
 os.environ["DATABASE_TYPE"] = "sqlite"
 os.environ["DATABASE_NAME"] = _TEST_DB_PATH
+os.environ["DEBUG"] = "true"
 os.environ["REDIS_ENABLE"] = "true"
 os.environ["POOL_SIZE"] = "1"
 os.environ["MAX_OVERFLOW"] = "1"
@@ -39,7 +40,6 @@ settings.DATABASE_NAME = _TEST_DB_PATH
 settings.REDIS_ENABLE = True
 settings.POOL_SIZE = 1
 settings.MAX_OVERFLOW = 1
-settings.CAPTCHA_ENABLE = False  # 测试环境关闭验证码
 
 # ============================================================
 # Mock Redis — dict 存储，支持 get/set/delete/exists/keys/ttl/expire

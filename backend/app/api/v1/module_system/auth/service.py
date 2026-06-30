@@ -2,7 +2,7 @@ import json
 import uuid
 from dataclasses import replace
 from datetime import datetime, timedelta
-from typing import Any, NewType
+from typing import Any
 
 import ua_parser
 from fastapi import Request
@@ -27,19 +27,13 @@ from app.core.logger import logger
 from app.core.redis_crud import RedisCURD
 from app.core.request_context import RequestContext
 from app.core.security import CustomOAuth2PasswordRequestForm, create_access_token, decode_access_token
-from app.utils.captcha_util import CaptchaUtil
-from app.utils.common_util import get_random_character
 from app.utils.hash_bcrpy_util import PwdUtil
 from app.utils.ip_local_util import IpLocalUtil, get_client_ip
 
 from .schema import (
-    CaptchaOutSchema,
     LoginOutSchema,
     OnlineOutSchema,
 )
-
-CaptchaKey = NewType("CaptchaKey", str)
-CaptchaBase64 = NewType("CaptchaBase64", str)
 
 
 def _resolve_request_ip(request: Request) -> str | None:
@@ -68,18 +62,6 @@ class LoginService:
         login_form: CustomOAuth2PasswordRequestForm,
         db: AsyncSession,
     ) -> LoginOutSchema:
-        referer = request.headers.get("referer", "")
-        request_from_docs = referer.endswith(("docs", "redoc"))
-
-        if settings.CAPTCHA_ENABLE and not request_from_docs:
-            if not login_form.captcha_key or not login_form.captcha:
-                raise CustomException(msg="验证码不能为空")
-            await CaptchaService.check_captcha(
-                redis=redis,
-                key=login_form.captcha_key,
-                captcha=login_form.captcha,
-            )
-
         auth = AuthSchema(db=db, check_data_scope=False)
         user = await UserCRUD(auth).get(username=login_form.username)
         if not user:
@@ -272,41 +254,4 @@ class LoginService:
         await RedisCURD(redis).delete(f"{RedisInitKeyConfig.REFRESH_TOKEN.key}:{session_id}")
         await RedisCURD(redis).delete(f"{RedisInitKeyConfig.USER_SESSION.key}:{session_id}")
         logger.info(f"用户退出登录成功，会话编号:{session_id}")
-        return True
-
-class CaptchaService:
-    @staticmethod
-    async def get_captcha(redis: Redis) -> CaptchaOutSchema:
-        if not settings.CAPTCHA_ENABLE:
-            raise CustomException(msg="未开启验证码服务")
-
-        captcha_base64, captcha_value = CaptchaUtil.captcha_arithmetic()
-        captcha_key = get_random_character()
-        await RedisCURD(redis).set(
-            key=f"{RedisInitKeyConfig.CAPTCHA_CODES.key}:{captcha_key}",
-            value=captcha_value,
-            expire=settings.CAPTCHA_EXPIRE_SECONDS,
-        )
-        return CaptchaOutSchema(
-            enable=settings.CAPTCHA_ENABLE,
-            key=CaptchaKey(captcha_key),
-            img_base=CaptchaBase64(f"data:image/png;base64,{captcha_base64}"),
-        )
-
-    @staticmethod
-    async def check_captcha(redis: Redis, key: str, captcha: str) -> bool:
-        if not captcha:
-            raise CustomException(msg="验证码不能为空")
-
-        redis_key = f"{RedisInitKeyConfig.CAPTCHA_CODES.key}:{key}"
-        captcha_value = await RedisCURD(redis).get(redis_key)
-        if not captcha_value:
-            raise CustomException(msg="验证码已过期")
-
-        if isinstance(captcha_value, bytes):
-            captcha_value = captcha_value.decode("utf-8")
-        if captcha.lower() != str(captcha_value).lower():
-            raise CustomException(msg="验证码错误")
-
-        await RedisCURD(redis).delete(redis_key)
         return True

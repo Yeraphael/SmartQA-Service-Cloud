@@ -3,14 +3,15 @@
 import hashlib
 from datetime import datetime
 
-from sqlalchemy import select
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.module_system.role.model import RoleModel
 from app.api.v1.module_system.user.model import UserModel, UserRolesModel
 from app.core.base_schema import AuthSchema
 from app.core.exceptions import CustomException
-from app.smartqa.models.dimension import DimStaffModel
+from app.smartqa.models.conversation import DwdQnConversationModel
+from app.smartqa.models.dimension import DimShopModel, DimStaffModel
 from app.utils.hash_bcrpy_util import PwdUtil
 
 DEFAULT_STAFF_PASSWORD = "SmartQA@123456"
@@ -241,6 +242,8 @@ class StaffUserService:
 
         result = await session.execute(stmt)
         rows = result.all()
+        staff_ids = [staff.id for staff, _user in rows]
+        staff_stats = await self._staff_conversation_stats(session, staff_ids)
 
         return [
             {
@@ -254,9 +257,42 @@ class StaffUserService:
                 "username": user.username if user else None,
                 "nickname": user.name if user else None,
                 "user_status": user.status if user else None,
+                "shop_name": staff_stats.get(staff.id, {}).get("shop_name"),
+                "group_name": None,
+                "conversation_count": staff_stats.get(staff.id, {}).get("conversation_count", 0),
+                "last_login": user.last_login.isoformat() if user and user.last_login else None,
             }
             for staff, user in rows
         ]
+
+    async def _staff_conversation_stats(self, session: AsyncSession, staff_ids: list[int]) -> dict[int, dict]:
+        if not staff_ids:
+            return {}
+
+        stmt = (
+            select(
+                DwdQnConversationModel.staff_id,
+                DimShopModel.shop_name,
+                func.count(DwdQnConversationModel.id).label("conversation_count"),
+            )
+            .select_from(DwdQnConversationModel)
+            .outerjoin(DimShopModel, DwdQnConversationModel.shop_id == DimShopModel.id)
+            .where(
+                DwdQnConversationModel.is_deleted == False,  # noqa: E712
+                DwdQnConversationModel.staff_id.in_(staff_ids),
+            )
+            .group_by(DwdQnConversationModel.staff_id, DimShopModel.shop_name)
+            .order_by(DwdQnConversationModel.staff_id, desc("conversation_count"))
+        )
+        rows = (await session.execute(stmt)).mappings().all()
+        stats: dict[int, dict] = {}
+        for row in rows:
+            staff_id = int(row["staff_id"])
+            item = stats.setdefault(staff_id, {"conversation_count": 0, "shop_name": None})
+            item["conversation_count"] += int(row.get("conversation_count") or 0)
+            if not item["shop_name"] and row.get("shop_name"):
+                item["shop_name"] = row["shop_name"]
+        return stats
 
     async def _get_staff(self, session: AsyncSession, staff_id: int) -> DimStaffModel:
         result = await session.execute(

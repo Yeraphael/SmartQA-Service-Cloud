@@ -30,8 +30,6 @@ class PasswordLoginForm(OAuth2PasswordRequestForm):
         client_secret: str | None = Form(default=None),
         username: str = Form(),
         password: str = Form(),
-        captcha_key: str | None = Form(default=""),
-        captcha: str | None = Form(default=""),
         login_type: str | None = Form(default="PC端", description="PC端 | 移动端"),
     ) -> None:
         super().__init__(
@@ -42,8 +40,6 @@ class PasswordLoginForm(OAuth2PasswordRequestForm):
             username=username,
             password=password,
         )
-        self.captcha_key = captcha_key
-        self.captcha = captcha
         self.login_type = login_type
 
 

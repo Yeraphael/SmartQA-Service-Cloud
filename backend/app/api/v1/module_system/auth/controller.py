@@ -13,8 +13,8 @@ from app.core.logger import logger
 from app.core.router_class import SmartQARoute
 from app.core.security import CustomOAuth2PasswordRequestForm
 
-from .schema import CaptchaOutSchema, LoginOutSchema
-from .service import CaptchaService, LoginService
+from .schema import LoginOutSchema
+from .service import LoginService
 
 AuthRouter = APIRouter(route_class=SmartQARoute, prefix="/auth", tags=["系统认证"])
 
@@ -50,18 +50,6 @@ async def get_new_token_controller(
 ) -> JSONResponse:
     new_token = await LoginService.refresh_token(db=db, redis=redis, refresh_token=payload)
     return SuccessResponse(data=new_token, msg="刷新成功")
-
-
-@AuthRouter.get(
-    "/captcha/get",
-    summary="获取验证码",
-    response_model=ResponseSchema[CaptchaOutSchema],
-)
-async def get_captcha_for_login_controller(
-    redis: Annotated[Redis, Depends(redis_getter)],
-) -> JSONResponse:
-    captcha = await CaptchaService.get_captcha(redis=redis)
-    return SuccessResponse(data=captcha, msg="获取验证码成功")
 
 
 @AuthRouter.post(
