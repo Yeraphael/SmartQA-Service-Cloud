@@ -59,11 +59,13 @@ export const Auth = {
 };
 
 export const SmartQAService = {
-  async login(username: string, password: string, rememberMe: boolean) {
+  async login(username: string, password: string, rememberMe: boolean, captchaKey?: string, captcha?: string) {
     const form = new URLSearchParams();
     form.append("username", username);
     form.append("password", password);
-    form.append("login_type", "PC端");
+    form.append("captcha_key", captchaKey || "");
+    form.append("captcha", captcha || "");
+    form.append("login_type", "PC");
     form.append("grant_type", "password");
     const response = await api.post<ApiResponse<LoginPayload>>("/system/auth/login", form, {
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -71,6 +73,9 @@ export const SmartQAService = {
     const data = unwrap(response.data);
     Auth.setTokens(data.access_token, data.refresh_token, rememberMe);
     return data;
+  },
+  captcha() {
+    return get<CaptchaPayload>("/system/auth/captcha/get");
   },
   async logout() {
     const token = Auth.getAccessToken();
@@ -134,18 +139,18 @@ async function post<T>(url: string, data?: unknown): Promise<T> {
 }
 
 function unwrap<T>(payload: ApiResponse<T>): T {
-  if (!payload.success || payload.code !== 200) {
-    throw new Error(payload.msg || "请求失败");
+  if (!payload.success || payload.status_code !== 200) {
+    throw new Error(payload.msg || "Request failed");
   }
   return payload.data as T;
 }
 
 export function apiErrorMessage(error: unknown) {
   if (axios.isAxiosError<ApiResponse<unknown>>(error)) {
-    return error.response?.data?.msg || error.message || "请求失败";
+    return error.response?.data?.msg || error.message || "Request failed";
   }
   if (error instanceof Error) return error.message;
-  return "请求失败";
+  return "Request failed";
 }
 
 export interface ApiResponse<T> {
@@ -154,6 +159,12 @@ export interface ApiResponse<T> {
   data: T | null;
   status_code: number;
   success: boolean;
+}
+
+export interface CaptchaPayload {
+  enable: boolean;
+  key: string;
+  img_base: string;
 }
 
 export interface LoginPayload {

@@ -1,6 +1,6 @@
 <template>
   <ElConfigProvider :locale="zhCn" size="default" :z-index="3000">
-    <div v-if="!isAuthed" class="login-screen">
+    <main v-if="!isAuthed" class="login-screen">
       <section class="login-panel">
         <div class="brand-lockup">
           <img :src="brandLogo" alt="SmartQA" />
@@ -9,11 +9,13 @@
             <span>Service Cloud</span>
           </div>
         </div>
+
         <h1>客服质检与客户意向分析系统</h1>
-        <p>登录后查看每日真实千牛会话、AI 质检结果和客服多维表现。</p>
+        <p>登录后进入对应工作台，查看真实千牛会话、AI 质检结果和客服多维表现。</p>
+
         <ElForm label-position="top" @submit.prevent="handleLogin">
           <ElFormItem label="账号">
-            <ElInput v-model.trim="loginForm.username" autocomplete="username" placeholder="请输入老板或客服账号" />
+            <ElInput v-model.trim="loginForm.username" autocomplete="username" placeholder="老板账号或客服账号" />
           </ElFormItem>
           <ElFormItem label="密码">
             <ElInput
@@ -33,7 +35,7 @@
           </ElButton>
         </ElForm>
       </section>
-    </div>
+    </main>
 
     <div v-else class="smartqa-shell">
       <aside :class="['side-nav', { collapsed: navCollapsed }]">
@@ -44,9 +46,11 @@
             <span>Service Cloud</span>
           </div>
         </div>
+
         <button class="collapse-btn" type="button" @click="navCollapsed = !navCollapsed">
           <ElIcon><Fold v-if="!navCollapsed" /><Expand v-else /></ElIcon>
         </button>
+
         <nav class="nav-list">
           <button
             v-for="item in visibleNavItems"
@@ -68,7 +72,7 @@
             <h2>{{ currentTitle }}</h2>
           </div>
           <div class="topbar-actions">
-            <ElSegmented v-model="roleMode" :options="roleOptions" />
+            <ElSegmented v-if="isBoss" v-model="roleMode" :options="roleOptions" />
             <ElButton circle @click="loadAll">
               <ElIcon><Refresh /></ElIcon>
             </ElButton>
@@ -90,27 +94,10 @@
           </div>
 
           <div class="metric-grid">
-            <MetricCard
-              label="总体服务质量分"
-              :value="formatScore(workbench?.metrics.service_quality_score)"
-              tone="blue"
-              suffix="/100"
-            />
-            <MetricCard
-              label="高风险会话"
-              :value="formatNumber(workbench?.metrics.high_risk_conversation_count)"
-              tone="red"
-            />
-            <MetricCard
-              label="需关注客服数"
-              :value="formatNumber(workbench?.metrics.need_attention_staff_count)"
-              tone="amber"
-            />
-            <MetricCard
-              label="高意向未跟进数"
-              :value="formatNumber(workbench?.metrics.high_intent_pending_count)"
-              tone="green"
-            />
+            <MetricCard label="总体服务质量分" :value="formatScore(workbench?.metrics.service_quality_score)" tone="blue" suffix="/100" />
+            <MetricCard label="高风险会话" :value="formatNumber(workbench?.metrics.high_risk_conversation_count)" tone="red" />
+            <MetricCard label="需关注客服数" :value="formatNumber(workbench?.metrics.need_attention_staff_count)" tone="amber" />
+            <MetricCard label="高意向未跟进数" :value="formatNumber(workbench?.metrics.high_intent_pending_count)" tone="green" />
           </div>
 
           <div class="dashboard-grid">
@@ -126,13 +113,6 @@
                 >
                   {{ dim.label }}
                 </button>
-              </div>
-              <div class="winner-strip">
-                <div v-for="winner in dimensionWinners" :key="winner.key" class="winner-card">
-                  <span>{{ winner.label }}</span>
-                  <strong>{{ winner.staff?.staff_name || "暂无" }}</strong>
-                  <em>{{ winner.staff ? scoreOf(winner.staff, winner.key).toFixed(1) : "--" }}</em>
-                </div>
               </div>
               <div class="quality-table">
                 <div class="quality-head">
@@ -150,8 +130,6 @@
                   :class="['quality-row', { selected: selectedStaff?.staff_id === staff.staff_id }]"
                   type="button"
                   @click="selectedStaffId = staff.staff_id"
-                  @mouseenter="hoverStaffId = staff.staff_id"
-                  @mouseleave="hoverStaffId = null"
                 >
                   <span class="rank-cell">{{ index + 1 }}</span>
                   <span class="staff-cell">
@@ -164,7 +142,7 @@
                   <span :class="scoreClass(scoreOf(staff, activeDimension))">{{ scoreOf(staff, activeDimension).toFixed(1) }}</span>
                   <span>{{ staff.overall_score.toFixed(1) }}</span>
                   <span :class="rankDeltaClass(rankDelta(staff))">{{ rankDeltaText(rankDelta(staff)) }}</span>
-                  <span class="issue-cell">{{ staff.main_issue }}</span>
+                  <span class="issue-cell">{{ staff.main_issue || "暂无明显问题" }}</span>
                   <span><StatusBadge :score="scoreOf(staff, activeDimension)" /></span>
                 </button>
                 <EmptyState v-if="!sortedStaff.length" text="暂无已分析客服数据" />
@@ -178,11 +156,10 @@
             </section>
 
             <section class="panel quadrant-panel">
-              <PanelTitle title="客服能力四象限" subtitle="服务效率分 × 服务质量分" />
+              <PanelTitle title="客服能力分布" subtitle="响应效率 × 服务质量" />
               <QuadrantChart
                 :points="workbench?.quadrant.points || []"
                 :selected-id="selectedStaff?.staff_id || undefined"
-                :hover-id="hoverStaffId || undefined"
                 @select="selectedStaffId = $event"
               />
             </section>
@@ -194,19 +171,19 @@
               <ProductOpportunityList :items="workbench?.product_opportunities || []" />
             </section>
             <section class="panel">
-              <PanelTitle title="近 7 天趋势" subtitle="质量分、风险、未跟进与会话量" />
+              <PanelTitle title="近 7 日趋势" subtitle="质量分、风险、未跟进与会话量" />
               <TrendChart :points="workbench?.trend_7d || []" />
             </section>
           </div>
         </section>
 
         <section v-else-if="activeView === 'staff-performance'" class="page-view">
-          <SectionHeader title="客服表现" subtitle="按六个能力维度查看团队真实表现，点击工作台榜单可查看客服详情。" />
+          <SectionHeader title="客服表现" subtitle="按六个能力维度查看团队真实表现。" />
           <div class="staff-performance-grid">
             <div v-for="dim in dimensions.filter((item) => item.key !== 'overall')" :key="dim.key" class="panel dimension-rank-panel">
               <PanelTitle :title="dim.label" subtitle="当前维度排名" />
               <div class="mini-rank-list">
-                <div v-for="staff in topStaffByDimension(dim.key).slice(0, 6)" :key="staff.staff_id" class="mini-rank-row">
+                <div v-for="staff in topStaffByDimension(dim.key).slice(0, 8)" :key="staff.staff_id" class="mini-rank-row">
                   <span>{{ staff.staff_name }}</span>
                   <strong>{{ scoreOf(staff, dim.key).toFixed(1) }}</strong>
                 </div>
@@ -237,11 +214,7 @@
               :subtitle="conversationDetail.conversation.conversation_id || ''"
             />
             <div class="message-list">
-              <div
-                v-for="message in conversationDetail.messages"
-                :key="message.id"
-                :class="['message-item', message.speaker_type]"
-              >
+              <div v-for="message in conversationDetail.messages" :key="message.id" :class="['message-item', message.speaker_type]">
                 <span>{{ message.speaker_account }} · {{ formatTime(message.message_time) }}</span>
                 <p>{{ message.content_text || "空消息" }}</p>
               </div>
@@ -250,14 +223,14 @@
         </section>
 
         <section v-else-if="activeView === 'staff-users'" class="page-view">
-          <SectionHeader title="客服管理" subtitle="管理客服与千牛账号、系统账号之间的绑定状态。" />
+          <SectionHeader title="客服管理" subtitle="管理客服、千牛账号和系统账号之间的绑定状态。" />
           <div class="panel">
             <StaffUserTable :items="staffUsers" />
           </div>
         </section>
 
         <section v-else-if="activeView === 'data-config'" class="page-view">
-          <SectionHeader title="数据与配置" subtitle="查看同步计划、每日批次、AI任务和质检规则。" />
+          <SectionHeader title="数据与配置" subtitle="查看同步计划、每日批次、AI 任务和质检规则。" />
           <div class="data-grid">
             <div class="panel">
               <PanelTitle title="数据状态" subtitle="千牛同步与每日任务" />
@@ -270,7 +243,7 @@
               <ElButton class="sync-button" type="primary" :loading="syncing" @click="triggerSync">立即同步千牛数据</ElButton>
             </div>
             <div class="panel">
-              <PanelTitle title="AI分析任务" :subtitle="`${qcTasks.length} 条任务`" />
+              <PanelTitle title="AI 分析任务" :subtitle="`${qcTasks.length} 条任务`" />
               <TaskList :items="qcTasks" />
               <ElButton class="sync-button" :loading="dailyQcLoading" @click="runDailyQc">先抽检 100 个会话</ElButton>
             </div>
@@ -282,15 +255,15 @@
         </section>
 
         <section v-else-if="activeView === 'my-workbench'" class="page-view">
-          <SectionHeader title="我的工作台" subtitle="客服查看本人服务表现、风险会话和待跟进客户。" />
+          <SectionHeader title="我的工作台" subtitle="查看个人服务表现、风险会话和待跟进客户。" />
           <div class="dashboard-grid support-grid">
             <section class="panel detail-panel">
-              <PanelTitle title="个人表现" :subtitle="selectedStaff?.primary_account || '当前账号绑定客服'" />
-              <StaffDetailCard v-if="selectedStaff" :staff="selectedStaff" />
+              <PanelTitle title="个人表现" :subtitle="myStaff?.primary_account || '当前账号绑定客服'" />
+              <StaffDetailCard v-if="myStaff" :staff="myStaff" />
               <EmptyState v-else text="当前账号暂无绑定客服数据" />
             </section>
             <section class="panel">
-              <PanelTitle title="我的近 7 天趋势" subtitle="服务质量变化" />
+              <PanelTitle title="近 7 日趋势" subtitle="服务质量变化" />
               <TrendChart :points="workbench?.trend_7d || []" />
             </section>
           </div>
@@ -356,7 +329,6 @@ const syncing = ref(false);
 const dailyQcLoading = ref(false);
 const activeDimension = ref<BossDimension["key"]>("overall");
 const selectedStaffId = ref<number | null>(null);
-const hoverStaffId = ref<number | null>(null);
 const conversationKeyword = ref("");
 const selectedConversationId = ref<number | null>(null);
 const conversationDetail = ref<ConversationDetail | null>(null);
@@ -387,6 +359,7 @@ const staffNavItems = [
   { key: "conversation-review", label: "会话复盘", icon: ChatDotRound },
 ];
 
+const isBoss = computed(() => Boolean(currentUser.value?.is_superuser || currentUser.value?.username === "boss"));
 const visibleNavItems = computed(() => (roleMode.value === "boss" ? bossNavItems : staffNavItems));
 const currentTitle = computed(() => visibleNavItems.value.find((item) => item.key === activeView.value)?.label || "SmartQA");
 
@@ -406,6 +379,15 @@ const dimensions = computed<BossDimension[]>(() => {
 
 const activeDimensionLabel = computed(() => dimensions.value.find((item) => item.key === activeDimension.value)?.label || "综合表现");
 const staffList = computed(() => workbench.value?.staff_quality || []);
+const myStaff = computed(() => {
+  const username = currentUser.value?.username || "";
+  return (
+    staffList.value.find((staff) => staff.primary_account === username || staff.staff_name === currentUser.value?.name) ||
+    staffList.value.find((staff) => staff.staff_id === selectedStaffId.value) ||
+    staffList.value[0] ||
+    null
+  );
+});
 const overallRankMap = computed(() => {
   const map = new Map<number, number>();
   [...staffList.value]
@@ -419,16 +401,7 @@ const currentRankMap = computed(() => {
   return map;
 });
 const sortedStaff = computed(() => topStaffByDimension(activeDimension.value));
-const selectedStaff = computed(() => {
-  const list = staffList.value;
-  return list.find((staff) => staff.staff_id === selectedStaffId.value) || list[0] || null;
-});
-const dimensionWinners = computed(() =>
-  dimensions.value.map((dimension) => ({
-    ...dimension,
-    staff: topStaffByDimension(dimension.key)[0],
-  }))
-);
+const selectedStaff = computed(() => staffList.value.find((staff) => staff.staff_id === selectedStaffId.value) || staffList.value[0] || null);
 
 watch(roleMode, () => {
   activeView.value = roleMode.value === "boss" ? "boss-workbench" : "my-workbench";
@@ -439,8 +412,15 @@ watch(staffList, (list) => {
 });
 
 onMounted(async () => {
+  normalizeEntryPath();
   if (isAuthed.value) {
-    await loadAll();
+    try {
+      await loadAll();
+      applyRoleHome();
+    } catch {
+      Auth.clear();
+      isAuthed.value = false;
+    }
   }
 });
 
@@ -454,6 +434,8 @@ async function handleLogin() {
     const data = await SmartQAService.login(loginForm.username, loginForm.password, loginForm.remember);
     currentUser.value = data.user_info;
     isAuthed.value = true;
+    normalizeEntryPath();
+    applyRoleHome();
     ElMessage.success("登录成功");
     await loadAll();
   } catch (error) {
@@ -465,20 +447,41 @@ async function handleLogin() {
 
 async function handleLogout() {
   await SmartQAService.logout();
+  Auth.clear();
   isAuthed.value = false;
   currentUser.value = null;
+  activeView.value = "boss-workbench";
+  roleMode.value = "boss";
+  normalizeEntryPath();
+}
+
+function applyRoleHome() {
+  if (isBoss.value) {
+    roleMode.value = "boss";
+    activeView.value = "boss-workbench";
+  } else {
+    roleMode.value = "staff";
+    activeView.value = "my-workbench";
+  }
+}
+
+function normalizeEntryPath() {
+  if (window.location.pathname !== "/") {
+    window.history.replaceState({}, "", "/");
+  }
 }
 
 async function loadAll() {
   loadError.value = "";
   try {
-    const [user, bossData] = await Promise.all([SmartQAService.currentUser().catch(() => null), SmartQAService.bossWorkbench()]);
+    const [user, bossData] = await Promise.all([SmartQAService.currentUser().catch(() => currentUser.value), SmartQAService.bossWorkbench()]);
     currentUser.value = user;
     workbench.value = bossData;
     productOpportunities.value = bossData.product_opportunities || [];
     await Promise.allSettled([loadConversations(), loadBossOnlyData()]);
   } catch (error) {
     loadError.value = apiErrorMessage(error);
+    throw error;
   }
 }
 
@@ -561,8 +564,8 @@ function rankDelta(staff: BossStaffQuality) {
 }
 
 function rankDeltaText(delta: number) {
-  if (delta > 0) return `↑ ${delta}`;
-  if (delta < 0) return `↓ ${Math.abs(delta)}`;
+  if (delta > 0) return `上升 ${delta}`;
+  if (delta < 0) return `下降 ${Math.abs(delta)}`;
   return "-";
 }
 
@@ -599,11 +602,7 @@ const StatusItem = defineComponent({
     status: { type: Boolean, default: false },
   },
   setup(props) {
-    return () =>
-      h("div", { class: "status-item" }, [
-        h("span", props.label),
-        h("strong", { class: props.status ? "status-value" : "" }, props.value),
-      ]);
+    return () => h("div", { class: "status-item" }, [h("span", props.label), h("strong", { class: props.status ? "status-value" : "" }, props.value)]);
   },
 });
 
@@ -615,11 +614,7 @@ const MetricCard = defineComponent({
     tone: { type: String, default: "blue" },
   },
   setup(props) {
-    return () =>
-      h("div", { class: ["metric-card", props.tone] }, [
-        h("span", props.label),
-        h("strong", [props.value, props.suffix ? h("em", props.suffix) : null]),
-      ]);
+    return () => h("div", { class: ["metric-card", props.tone] }, [h("span", props.label), h("strong", [props.value, props.suffix ? h("em", props.suffix) : null])]);
   },
 });
 
@@ -629,11 +624,7 @@ const PanelTitle = defineComponent({
     subtitle: { type: String, default: "" },
   },
   setup(props) {
-    return () =>
-      h("div", { class: "panel-title" }, [
-        h("h3", props.title),
-        props.subtitle ? h("span", props.subtitle) : null,
-      ]);
+    return () => h("div", { class: "panel-title" }, [h("h3", props.title), props.subtitle ? h("span", props.subtitle) : null]);
   },
 });
 
@@ -739,23 +730,20 @@ const QuadrantChart = defineComponent({
   props: {
     points: { type: Array as () => Array<{ staff_id: number; staff_name: string; x: number; y: number; score: number; status: string }>, default: () => [] },
     selectedId: { type: Number, default: null },
-    hoverId: { type: Number, default: null },
   },
   emits: ["select"],
   setup(props, { emit }) {
     return () =>
       h("div", { class: "quadrant-chart" }, [
-        h("div", { class: "quadrant-axis x" }, "服务效率分"),
-        h("div", { class: "quadrant-axis y" }, "服务质量分"),
+        h("div", { class: "quadrant-axis x" }, "响应效率"),
+        h("div", { class: "quadrant-axis y" }, "服务质量"),
         h("div", { class: "quadrant-line vertical" }),
         h("div", { class: "quadrant-line horizontal" }),
-        h("span", { class: "quadrant-label top-right" }, "质量优秀 效率优秀"),
-        h("span", { class: "quadrant-label bottom-left" }, "质量待提升 效率待提升"),
         props.points.map((point) =>
           h(
             "button",
             {
-              class: ["quadrant-point", { active: props.selectedId === point.staff_id, hover: props.hoverId === point.staff_id }],
+              class: ["quadrant-point", { active: props.selectedId === point.staff_id }],
               style: { left: `${Math.max(4, Math.min(point.x, 98))}%`, bottom: `${Math.max(4, Math.min(point.y, 96))}%` },
               title: `${point.staff_name} ${point.score}`,
               onClick: () => emit("select", point.staff_id),
@@ -883,10 +871,8 @@ const TaskList = defineComponent({
   setup(props) {
     return () =>
       h("div", { class: "compact-list" }, [
-        ...props.items.slice(0, 8).map((item) =>
-          h("div", { class: "compact-row" }, [h("strong", item.task_id), h("span", item.status), h("em", formatTime(item.finished_at || item.created_time))])
-        ),
-        props.items.length ? null : h(EmptyState, { text: "暂无AI分析任务" }),
+        ...props.items.slice(0, 8).map((item) => h("div", { class: "compact-row" }, [h("strong", item.task_id), h("span", item.status), h("em", formatTime(item.finished_at || item.created_time))])),
+        props.items.length ? null : h(EmptyState, { text: "暂无 AI 分析任务" }),
       ]);
   },
 });
@@ -896,9 +882,7 @@ const RuleList = defineComponent({
   setup(props) {
     return () =>
       h("div", { class: "compact-list" }, [
-        ...props.items.slice(0, 10).map((item) =>
-          h("div", { class: "compact-row" }, [h("strong", item.rule_name), h("span", item.category), h("em", `${item.deduction_score}分`)])
-        ),
+        ...props.items.slice(0, 10).map((item) => h("div", { class: "compact-row" }, [h("strong", item.rule_name), h("span", item.category), h("em", `${item.deduction_score}分`)])),
         props.items.length ? null : h(EmptyState, { text: "暂无规则数据" }),
       ]);
   },
